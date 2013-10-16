@@ -1,3 +1,16 @@
+/**************************************************************************
+ * Copyright 2013, Freescale Semiconductor, Inc. All rights reserved.
+ ***************************************************************************/
+ /*
+ * File:        pkt_sched.h
+ *
+ * Description: This file is referenced from the package iproute-3.8.0.
+ *		This header file is modified for CEETM QDisc definitions.
+ *
+ * Authors:     Ganga Negi <ganga.negi@freescale.com>
+ */
+/******************************************************************************/
+
 #ifndef __LINUX_PKT_SCHED_H
 #define __LINUX_PKT_SCHED_H
 
@@ -361,6 +374,56 @@ struct tc_htb_xstats {
 	__u32 ctokens;
 };
 
+
+/* CEETM section */
+
+/* CEETM Qdsic Types*/
+#define TC_CEETM_NUM_WBFS_Q	8
+enum {
+		CEETM_Q_ROOT = 1,	/* Root Qdisc which has Priority
+			Schedulerand Shaper at Logical Network Interface */
+		CEETM_Q_PRIO,	/* Inner Qdisc which has Priority
+					Scheduler functionality */
+		CEETM_Q_WBFS	/* Inner Qdisc which has Weighted Fair
+				Queueing functionality */
+};
+/* CEETM Qdisc configuration parameters */
+struct tc_ceetm_qopt {
+		__u32	type;
+		__u32	rate;
+		__u32	ceil;
+		__u16	mpu;
+		__u16	overhead;
+		__u16	queues;
+		__u8	weight[TC_CEETM_NUM_WBFS_Q];
+		__u8	cr_map[TC_CEETM_NUM_WBFS_Q];	/* Each bit 0-7
+					indicates the Comitted Rate
+					Eligibilty of respective queue */
+		__u8	er_map[TC_CEETM_NUM_WBFS_Q];	/* Each bit 0-7
+					indicates the Excess Rate
+					Eligibilty of respective queue */
+};
+/* CEETM Class configuration parameters */
+struct tc_ceetm_copt {
+		__u32	rate;
+		__u32	ceil;
+		__u32	weight;
+};
+enum {
+		TCA_CEETM_UNSPEC,
+		TCA_CEETM_COPT,
+		TCA_CEETM_INIT,
+		__TCA_CEETM_MAX,
+};
+/* CEETM stats */
+struct tc_ceetm_xstats {
+	__u64		enqueue;
+	__u64		drop;
+	__u64		dequeue;
+	__u64		deq_bytes;
+};
+
+#define TCA_CEETM_MAX (__TCA_CEETM_MAX - 1)
 /* HFSC section */
 
 struct tc_hfsc_qopt {
