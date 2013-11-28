@@ -178,6 +178,11 @@ extern void ceetm_cfg_wbfs_leaf_q(void *handle,
 			uint32_t idx,
 			struct ceetm_class *cl,
 			struct net_device *dev);
+extern int qman_ceetm_channel_set_group_cr_er_eligibility(
+		struct ceetm_sched *p_q,
+		int grp,
+		u16 cr_eligibility,
+		u16 er_eligibility);
 extern int ceetm_cfg_wbfs_grp(void *handle, int	grp, uint32_t pri);
 extern int ceetm_release_lni(void *handle);
 extern int ceetm_release_channel(void *handle);

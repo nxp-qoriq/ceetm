@@ -317,6 +317,12 @@ static int ceetm_cfg_wbfs_class(struct Qdisc *root,
 	q->un.wbfs.er_eligible = qopt->er_map[0];
 	ceetm_sch_dbg("CR %d ER %d\n", q->un.wbfs.cr_eligible,
 					q->un.wbfs.er_eligible);
+	if (qman_ceetm_channel_set_group_cr_er_eligibility(
+				p_q, grp, q->un.wbfs.cr_eligible,
+				q->un.wbfs.er_eligible)) {
+		ceetm_err("CEETM: Could not set the eligibility.\n");
+		goto cleanup;
+	}
 	return CEETM_SUCCESS;
 
 cleanup:

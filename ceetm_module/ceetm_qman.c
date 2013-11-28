@@ -554,6 +554,19 @@ void ceetm_cfg_prio_leaf_q(void *handle,
 	p->cb_ctx = (void *) fq;
 	cl->hw_handle = (void *)fq;
 	cl->cq = (void *)cq;
+	/* Set CR and ER eligibility of PRIO QDisc */
+	if (qman_ceetm_channel_set_cq_cr_eligibility(channel,
+				idx, cl->cfg.prio.cr_eligible)) {
+		ceetm_err("Failed to set cr eligibility of cq %d"
+				" for CH (0x%X)\n", idx, channel->idx);
+		return;
+	}
+	if (qman_ceetm_channel_set_cq_er_eligibility(channel, idx,
+				cl->cfg.prio.er_eligible)) {
+		ceetm_err("Failed to set er eligibility of cq %d"
+				" for CH (0x%X)\n", idx, channel->idx);
+		return;
+	}
 	return;
 }
 
@@ -641,6 +654,35 @@ void ceetm_cfg_wbfs_leaf_q(void *handle,
 	cl->hw_handle = (void *)fq;
 	cl->cq = (void *)cq;
 	return;
+}
+
+int qman_ceetm_channel_set_group_cr_er_eligibility(
+		struct ceetm_sched *p_q,
+		int grp,
+		u16 cr_eligibility,
+		u16 er_eligibility)
+{
+	struct qm_ceetm_channel *channel =
+		(struct qm_ceetm_channel *)p_q->hw_handle;
+	int group_b_flag = 0;
+
+	if (grp == CEETM_WBFS_GRP_B)
+		group_b_flag = 1;
+
+	if (qman_ceetm_channel_set_group_cr_eligibility(
+				channel, group_b_flag, cr_eligibility)) {
+		ceetm_err("Failed to set cr eligibility of group %d"
+			" for CH (0x%X)\n", grp, channel->idx);
+		return -1;
+	}
+	if (qman_ceetm_channel_set_group_er_eligibility(
+			channel, group_b_flag, er_eligibility)) {
+		ceetm_err("Failed to set er eligibility of cq %d"
+			" for CH (0x%X)\n", grp, channel->idx);
+		return -1;
+	}
+
+	return CEETM_SUCCESS;
 }
 
 int ceetm_cfg_wbfs_grp(void *handle,
