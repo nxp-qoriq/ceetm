@@ -16,6 +16,7 @@
 
 #include <dpa/dpaa_eth.h>
 #include <dpa/dpaa_eth_common.h>
+#include <dpa/mac.h>
 #include <lnxwrp_fm.h>
 #include "include/ceetm.h"
 
