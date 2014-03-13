@@ -716,7 +716,7 @@ static void ceetm_destroy_class(struct Qdisc *sch, struct ceetm_class *cl)
 static void ceetm_destroy(struct Qdisc *sch)
 {
 	struct ceetm_sched *q = qdisc_priv(sch);
-	struct hlist_node *n, *next;
+	struct hlist_node *next;
 	struct ceetm_class *cl;
 	unsigned int i;
 
@@ -752,11 +752,11 @@ static void ceetm_destroy(struct Qdisc *sch)
 
 	/* If CEETM ROOT typw Qdisc then, Destroy attached Class Resourcees */
 	for (i = 0; i < q->clhash.hashsize; i++) {
-		hlist_for_each_entry(cl, n, &q->clhash.hash[i], common.hnode)
+		hlist_for_each_entry(cl, &q->clhash.hash[i], common.hnode)
 			tcf_destroy_chain(&cl->filter_list);
 	}
 	for (i = 0; i < q->clhash.hashsize; i++) {
-		hlist_for_each_entry_safe(cl, n, next, &q->clhash.hash[i],
+		hlist_for_each_entry_safe(cl, next, &q->clhash.hash[i],
 					  common.hnode)
 			ceetm_destroy_class(sch, cl);
 	}
@@ -889,7 +889,6 @@ static void ceetm_walk(struct Qdisc *sch, struct qdisc_walker *arg)
 {
 	struct ceetm_sched *q = qdisc_priv(sch);
 	struct ceetm_class *cl;
-	struct hlist_node *n;
 	unsigned int i;
 
 	ceetm_sch_dbg("sch %p,  handle 0x%x, parent 0x%X\n",
@@ -898,7 +897,7 @@ static void ceetm_walk(struct Qdisc *sch, struct qdisc_walker *arg)
 		return;
 
 	for (i = 0; i < q->clhash.hashsize; i++) {
-		hlist_for_each_entry(cl, n, &q->clhash.hash[i], common.hnode) {
+		hlist_for_each_entry(cl, &q->clhash.hash[i], common.hnode) {
 			if (arg->count < arg->skip) {
 				arg->count++;
 				continue;
