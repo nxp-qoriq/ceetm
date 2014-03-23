@@ -29,6 +29,11 @@
 static u8 ceetm_1g_lni_index[MAX_CEETM] = {2, 2};
 static u8 ceetm_10g_lni_index[MAX_CEETM];
 
+extern int enqueue_pkt_to_oh(struct bonding *bond, struct sk_buff *skb, struct dpa_fq *tx_fq);
+extern int export_oh_port_info_to_ceetm(struct bonding *bond,
+		uint16_t *channel, unsigned long *fman_dcpid,
+		unsigned long *oh_offset, unsigned long *cell_index);
+
 /******** Utility Fucntions *********/
 static int get_fm_dcp_id(char *c, uint32_t *res)
 {
@@ -155,7 +160,20 @@ int ceetm_enqueue_pkt(void *handle, struct sk_buff *skb)
 	if (fq->congested)
 		return -ENOSPC;
 
-	priv = netdev_priv(dev);
+	/*Checks whether the packets are going to bonding device*/
+	if ((dev->flags & IFF_MASTER)
+		&& (dev->priv_flags & IFF_BONDING)) {
+
+		struct bonding *bond = netdev_priv(dev);
+		/*This function is redirecting CEETM packets to OH port i.e.
+		  enqueuing one skb pkt to offline port which is attached
+		  to a bond.CEETM xmit function cannot handle packets
+		  of bonding type */
+		enqueue_pkt_to_oh(bond, skb, (struct dpa_fq *)fq);
+		return CEETM_SUCCESS;
+	} else
+		priv = netdev_priv(dev);
+
 	percpu_priv = per_cpu_ptr(priv->percpu_priv, smp_processor_id());
 	countptr = __this_cpu_ptr(priv->dpa_bp->percpu_count);
 	dpa_bp = priv->dpa_bp;
@@ -300,8 +318,6 @@ int ceetm_enqueue_pkt(void *handle, struct sk_buff *skb)
 void ceetm_cfg_lni(struct net_device *dev,
 			struct ceetm_sched *q)
 {
-	struct dpa_priv_s *priv;
-	struct mac_device *mac_dev;
 	struct qm_ceetm_sp *sp = NULL;
 	struct qm_ceetm_lni *lni = NULL;
 	uint32_t dcp_id, sp_idx, lni_idx;
@@ -309,26 +325,52 @@ void ceetm_cfg_lni(struct net_device *dev,
 	struct qm_ceetm_rate token_rate, token_ceil;
 	uint16_t token_limit;
 
-	priv = netdev_priv(dev);
-	mac_dev = priv->mac_dev;
+	/*Checks whether the packets are going to bonding device*/
+	if ((dev->flags & IFF_MASTER)
+		&& (dev->priv_flags & IFF_BONDING)) {
 
-	if (!mac_dev) {
-		ceetm_err("MAC dev not exist for (%s)\n", dev->name);
-		return;
-	}
-	if (get_fm_dcp_id(dev->name, &dcp_id)) {
-		ceetm_err("Invalid  device (%s)\n", dev->name);
-		return;
-	}
-	if (e_FM_PORT_TYPE_TX_10G == get_tx_port_type(mac_dev)) {
-		ceetm_dbg("Port_type is 10G\n");
-		/* Using LNI 0 & 1 for 10G ports only */
-		lni_idx = ceetm_10g_lni_index[dcp_id]++;
-		sp_idx = mac_dev->cell_index;
-	} else {
-		ceetm_dbg("Port_type is 1G\n");
+		/*Packets are going to OH port*/
+		struct bonding *bond = netdev_priv(dev);
+		uint16_t channel;
+		unsigned long oh_offset, cell_index;
+
+		ceetm_dbg("Packets being sent to bonding device\n");
+
+		if (export_oh_port_info_to_ceetm(bond, &channel,
+				&dcp_id, &oh_offset, &cell_index)) {
+			ceetm_err("Invalid  bonding device\n");
+			return;
+		}
+
+		sp_idx = cell_index + CEETM_OFFSET_OH;
 		lni_idx = ceetm_1g_lni_index[dcp_id]++;
-		sp_idx = mac_dev->cell_index + 2;
+
+	} else {
+	/*Packets are going to DPAA ethernet port*/
+		struct mac_device *mac_dev;
+		struct dpa_priv_s *priv;
+		priv = netdev_priv(dev);
+		mac_dev = priv->mac_dev;
+
+		if (!mac_dev) {
+			ceetm_err("MAC dev not exist for (%s)\n", dev->name);
+			return;
+		}
+		if (get_fm_dcp_id(dev->name, &dcp_id)) {
+			ceetm_err("Invalid  device (%s)\n", dev->name);
+			return;
+		}
+		if (e_FM_PORT_TYPE_TX_10G == get_tx_port_type(mac_dev)) {
+			ceetm_dbg("Port_type is 10G\n");
+			/* Using LNI 0 & 1 for 10G ports only */
+			lni_idx = ceetm_10g_lni_index[dcp_id]++;
+			sp_idx = mac_dev->cell_index;
+		} else {
+			ceetm_dbg("Port_type is 1G\n");
+			lni_idx = ceetm_1g_lni_index[dcp_id]++;
+			sp_idx = mac_dev->cell_index + CEETM_OFFSET_1G;
+		}
+
 	}
 	/* claim a subportal */
 	if (qman_ceetm_sp_claim(&sp, dcp_id, sp_idx))

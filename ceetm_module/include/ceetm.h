@@ -28,6 +28,11 @@
 
 #define CEETM_SUCCESS	0
 
+/*sub portal index of DPAA 1G port = cell index + 2*/
+#define CEETM_OFFSET_1G	2
+/*sub portal index of DPAA OH port = cell index + 9*/
+#define CEETM_OFFSET_OH	9
+
 #define ceetm_err(fmt, arg...)  \
 	printk(KERN_ERR"[CPU %d ln %d fn %s] - " fmt, smp_processor_id(), \
 	__LINE__, __func__, ##arg)

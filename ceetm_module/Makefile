@@ -23,6 +23,7 @@ include $(KERNEL_PATH)/drivers/net/ethernet/freescale/fman/ncsw_config.mk
 EXTRA_CFLAGS += -I$(KERNEL_PATH)/drivers/net/ethernet/freescale/fman/src/wrapper/
 EXTRA_CFLAGS += -I$(KERNEL_PATH)/drivers/net/ethernet/freescale/dpa
 EXTRA_CFLAGS += -I$(KERNEL_PATH)/drivers/net/ethernet/freescale/
+EXTRA_CFLAGS += -I$(KERNEL_PATH)/drivers/net/bonding
 EXTRA_CFLAGS += -I$(KERNEL_PATH)/include
 EXTRA_CFLAGS += -I$(KERNEL_PATH)/net/sched/
 
