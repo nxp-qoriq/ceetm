@@ -104,7 +104,7 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	int ceetm_er_mode = 0;
 	int er = 0;
 	int ceetm_queue_mode = 0;
-	int id_q = 0;
+	int count_q = 0;
 	int id_cr = 0;
 	int id_er = 0;
 	struct rtattr *tail;
@@ -326,7 +326,7 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 							);
 					return -1;
 				}
-				if (id_q >= opt.queues) {
+				if (count_q >= opt.queues) {
 					if (opt.type)
 						explain1(opt.type);
 					else
@@ -358,8 +358,8 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 						);
 					return -1;
 				}
-				opt.weight[id_q++] = num;
-				if (id_q >= opt.queues)
+				opt.weight[count_q++] = num;
+				if (count_q >= opt.queues)
 					ceetm_queue_mode = 0;
 			} else if (ceetm_cr_mode) {
 				__u8 num;
@@ -456,6 +456,10 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	}
 	if (opt.type == CEETM_Q_WBFS) {
 		if (ceetm_cr_mode || ceetm_er_mode) {
+			explain1(3);
+			return -1;
+		}
+		if (count_q != opt.queues) {
 			explain1(3);
 			return -1;
 		}
