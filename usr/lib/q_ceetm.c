@@ -51,11 +51,13 @@ static void explain(void)
 		" mpu      minimum packet size used in rate computations\n"
 		" overhead per-packet size overhead used in rate computations\n"
 		" ceil     define Peak rate support upper class rate\n"
+		" weight   Weightage(i.e. W) given to a class channel lies between [0, 8],\n"
+		" where weight equals to zero will only allow one packet TX in each turn of the queues.\n"
 		" cr_map   Boolean values for leaf nodes to contribute in"
 		" committed rate shaping - 0 for NO, 1 for YES\n"
 		" er_map   Boolean values for leaf nodes to contribute in "
 		"excess rate shaping - 0 for NO, 1 for YES\n"
-		" weight   how much weightage given to a leaf at once "
+		" w[1..8]  how much weightage given to a leaf at once "
 		"[1, 248]\n"
 		" queues   in case of wbfs type class tells whether it has 4/8"
 		" queues.{4 or 8}\n"
@@ -73,7 +75,7 @@ static void explain1(int type_mode)
 		fprintf(stderr, "Usage:\n"
 		"a) ... class add ... ceetm rate"
 		" 1000mbit ceil 1000mbit\nb) ... class add ..."
-		" ceetm weight 20\n");
+		" ceetm weight 1\n");
 	else if (type_mode == 2)
 		fprintf(stderr, "Usage:\n"
 				" ... qdisc add ... ceetm type prio"
@@ -532,7 +534,11 @@ static int ceetm_parse_class_opt(struct qdisc_util *qu, int argc, char **argv,
 				explain1(0);
 				return -1;
 			}
-			opt.weight = weight;
+			if (weight < 0 && weight > 8) {
+				fprintf(stderr, "Value of \"weight\" is in between [0, 8].\n");
+				return -1;
+			}
+			opt.weight = weight * 1000;
 			ceetm_weight_mode = 1;
 		} else {
 			explain();
