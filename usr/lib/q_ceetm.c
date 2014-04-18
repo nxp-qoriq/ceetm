@@ -662,7 +662,7 @@ static int ceetm_print_xstats(struct qdisc_util *qu, FILE *f, struct rtattr *xst
 		return -1;
 
 	st = RTA_DATA(xstats);
-	fprintf(f, "enqueue %lu drop %lu dequeue %lu dequeue_bytes %lu\n",
+	fprintf(f, "enqueue %llu drop %llu dequeue %llu dequeue_bytes %llu\n",
 			st->enqueue, st->drop, st->dequeue, st->deq_bytes);
 	return 0;
 }
