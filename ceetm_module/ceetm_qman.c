@@ -160,6 +160,7 @@ int ceetm_enqueue_pkt(void *handle, struct sk_buff *skb)
 	if (fq->congested)
 		return -ENOSPC;
 
+#ifdef CONFIG_BONDING
 	/*Checks whether the packets are going to bonding device*/
 	if ((dev->flags & IFF_MASTER)
 		&& (dev->priv_flags & IFF_BONDING)) {
@@ -172,6 +173,7 @@ int ceetm_enqueue_pkt(void *handle, struct sk_buff *skb)
 		enqueue_pkt_to_oh(bond, skb, (struct dpa_fq *)fq);
 		return CEETM_SUCCESS;
 	} else
+#endif
 		priv = netdev_priv(dev);
 
 	percpu_priv = per_cpu_ptr(priv->percpu_priv, smp_processor_id());
@@ -325,6 +327,7 @@ void ceetm_cfg_lni(struct net_device *dev,
 	struct qm_ceetm_rate token_rate, token_ceil;
 	uint16_t token_limit;
 
+#ifdef CONFIG_BONDING
 	/*Checks whether the packets are going to bonding device*/
 	if ((dev->flags & IFF_MASTER)
 		&& (dev->priv_flags & IFF_BONDING)) {
@@ -346,6 +349,7 @@ void ceetm_cfg_lni(struct net_device *dev,
 		lni_idx = ceetm_1g_lni_index[dcp_id]++;
 
 	} else {
+#endif
 	/*Packets are going to DPAA ethernet port*/
 		struct mac_device *mac_dev;
 		struct dpa_priv_s *priv;
@@ -371,7 +375,9 @@ void ceetm_cfg_lni(struct net_device *dev,
 			sp_idx = mac_dev->cell_index + CEETM_OFFSET_1G;
 		}
 
+#ifdef CONFIG_BONDING
 	}
+#endif
 	/* claim a subportal */
 	if (qman_ceetm_sp_claim(&sp, dcp_id, sp_idx))
 		return;

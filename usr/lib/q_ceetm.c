@@ -29,13 +29,13 @@
 static void explain(void)
 {
 		fprintf(stderr, "Usage:\n"
-		"... qdisc add ... ceetm [type T] [rate R] [ceil C] [overhead "
+		"... qdisc add ... ceetm type root [rate R] [ceil C] [overhead "
 		"O] [mpu M]\n"
 		"... class add ... ceetm [rate T] [ceil C]\n"
 		"... class add ... ceetm [weight W]\n"
-		"... qdisc add ... ceetm [type T] [cr_map c1 c2 c3 c4 c5 c6 c7"
+		"... qdisc add ... ceetm type prio [cr_map c1 c2 c3 c4 c5 c6 c7"
 		" c8] [er_map e1 e2 e3 e4 e5 e6 e7 e8]\n"
-		"... qdisc add ... ceetm [type T] [queues Q w1 w2 w3 w4 w5 w6 "
+		"... qdisc add ... ceetm type wbfs [queues Q w1 w2 w3 w4 w5 w6 "
 		"w7 w8] [cr_map c1] [er_map e1]\n"
 		"\n type has values: root (Logical NW interface instance"
 		" in CEETM)"
@@ -49,7 +49,8 @@ static void explain(void)
 		"\n\n"
 		" rate     rate allocated to this class\n"
 		" mpu      minimum packet size used in rate computations\n"
-		" overhead per-packet size overhead used in rate computations\n"
+		" overhead per-packet size overhead used in rate computations.\n"
+		"\t Recommended value for overhead is 24 i.e. 12bytes IFG + 8bytes Preamble + 4bytes FCS.\n"
 		" ceil     define Peak rate support upper class rate\n"
 		" weight   Weightage(i.e. W) given to a class channel lies between [0, 8],\n"
 		" where weight equals to zero will only allow one packet TX in each turn of the queues.\n"
@@ -69,7 +70,7 @@ static void explain1(int type_mode)
 	if (type_mode == 1)
 		fprintf(stderr, "Usage:\n"
 		" ... qdisc add ... ceetm type root"
-		" rate 1000mbit ceil 1000mbit mpu 64 overhead 20\n"
+		" rate 1000mbit ceil 1000mbit mpu 64 overhead 24\n"
 		);
 	else if (type_mode == 0)
 		fprintf(stderr, "Usage:\n"
