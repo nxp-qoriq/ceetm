@@ -63,7 +63,7 @@ extern int get_size_and_cell(unsigned *size, int *cell_log, char *str);
 extern int get_time(unsigned *time, const char *str);
 extern int get_linklayer(unsigned *val, const char *arg);
 
-extern void print_rate(char *buf, int len, __u32 rate);
+//extern void print_rate(char *buf, int len, __u32 rate);
 extern void print_size(char *buf, int len, __u32 size);
 extern void print_qdisc_handle(char *buf, int len, __u32 h);
 extern void print_time(char *buf, int len, __u32 time);
