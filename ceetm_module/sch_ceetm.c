@@ -123,7 +123,7 @@ static int ceetm_enqueue(struct sk_buff *skb, struct Qdisc *sch)
 	return CEETM_SUCCESS;
 drop:
 	/* Increment Drop Stats */
-	if (cl)
+	if (cl && cl->hw_handle)
 		ceetm_inc_drop_cnt(cl->hw_handle);
 	if (skb)
 		dev_kfree_skb_any(skb);
