@@ -25,7 +25,6 @@
 #include "include/pkt_sched.h"
 #include <linux/version.h>
 
-
 MODULE_AUTHOR("Freescale Semiconductor, Inc");
 MODULE_DESCRIPTION("CEETM QDISC");
 MODULE_LICENSE("GPL");
@@ -96,6 +95,9 @@ static struct ceetm_class *ceetm_classify(struct sk_buff *skb,
 	return cl;
 }
 
+#if (defined CONFIG_ASF_EGRESS_QOS) || (defined CONFIG_ASF_LINUX_QOS)
+extern asf_qos_fn_hook *asf_qos_fn;
+#endif
 /**
  * ceetm_enqueue - Enqueue a packet into CEETM Frame Queue
  *
@@ -104,7 +106,17 @@ static struct ceetm_class *ceetm_classify(struct sk_buff *skb,
 static int ceetm_enqueue(struct sk_buff *skb, struct Qdisc *sch)
 {
 	int	ret;
-	struct ceetm_class *cl = ceetm_classify(skb, sch, &ret);
+	struct ceetm_class *cl;
+
+#if (defined CONFIG_ASF_LINUX_QOS)
+	if (asf_qos_fn) {
+		ret = asf_qos_fn(skb);
+		if (!ret)
+			return NET_XMIT_SUCCESS;
+	}
+#endif
+
+	cl = ceetm_classify(skb, sch, &ret);
 
 	if (!cl || !cl->hw_handle) {
 		if (cl)
