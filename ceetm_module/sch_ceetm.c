@@ -123,7 +123,7 @@ static int ceetm_enqueue(struct sk_buff *skb, struct Qdisc *sch)
 	return CEETM_SUCCESS;
 drop:
 	/* Increment Drop Stats */
-	if (cl)
+	if (cl && cl->hw_handle)
 		ceetm_inc_drop_cnt(cl->hw_handle);
 	if (skb)
 		dev_kfree_skb_any(skb);
@@ -396,8 +396,8 @@ static int ceetm_init(struct Qdisc *sch, struct nlattr *opt)
 		struct ceetm_sched *root_q = qdisc_priv(root);
 
 		ceetm_sch_dbg("-PRIO- sch %p,  handle 0x%x, parent 0x%X "
-					"dev %s Root 0x%p\n", sch, sch->handle,
-						sch->parent, dev->name, root);
+				"dev %s Root 0x%p\n", sch, sch->handle,
+				sch->parent, dev->name, root);
 		if (sch->parent == TC_H_ROOT) {
 			ceetm_err("CEETM: PRIO cann't be Root Qdisc.\n");
 			return -EINVAL;
@@ -414,19 +414,22 @@ static int ceetm_init(struct Qdisc *sch, struct nlattr *opt)
 			ceetm_err("CEETM: Invalid Parent."
 				" Another Qdisc already attached.\n");
 			return -EINVAL;
-		} else
-			cl->child_qdisc = sch;
+		}
+
+		cl->child_qdisc = sch;
 		q->parent = cl;
 		q->un.prio.wbfs_grp = 0;
 		q->hw_handle = NULL;
 		/* Configure Equivalent HW-CEETM instance*/
 		ceetm_cfg_channel(root_q->hw_handle, dev->mtu, q);
 		if (NULL == q->hw_handle) {
+			cl->child_qdisc = NULL;
 			ceetm_err("CEETM: unable to create equivalent"
 					" Channel Scheduler instance.\n");
 			return -EINVAL;
 		}
 		if (ceetm_cfg_prio_class(root, sch, q, qopt)) {
+			cl->child_qdisc = NULL;
 			/* delete the allocated channel */
 			ceetm_release_channel(q->hw_handle);
 			return -EINVAL;
@@ -705,13 +708,16 @@ static void ceetm_destroy_class(struct Qdisc *sch, struct ceetm_class *cl)
 		ceetm_sch_dbg("child_Qdisc %p\n", cl->child_qdisc);
 		q->parent = NULL;
 		qdisc_destroy(cl->child_qdisc);
+		cl->child_qdisc = NULL;
 	}
 	tcf_destroy_chain(&cl->filter_list);
 
 	if (cl->level == CEETM_INNER_CLASS) /* All others are static ones */
 		kfree(cl);
-	else if (cl->hw_handle)
+	else if (cl->hw_handle) {
 		ceetm_release_cq(cl->hw_handle);
+		cl->hw_handle = NULL;
+	}
 }
 
 static void ceetm_destroy(struct Qdisc *sch)
@@ -734,17 +740,19 @@ static void ceetm_destroy(struct Qdisc *sch)
 	   Root Qdisc destroy is called. So no need to handle class destory
 	   in other types of CEETM QDISC destroy */
 	if (q->type != CEETM_Q_ROOT) {
-		/* Only delte QDISC resources as sub classes/ qdiscs of it's
+		/* Only delete QDISC resources as sub classes/ qdiscs of it's
 		   shall be handled by Root Qdisc deletion */
 		ceetm_sch_dbg("Not a ROOT QDISC\n");
 		if (q->parent == NULL) {
 			ceetm_sch_dbg("OK Parent is NULL\n");
 			tcf_destroy_chain(&q->filter_list);
+			q->filter_list = NULL;
 			qdisc_class_hash_destroy(&q->clhash);
 			/* Release QMAN resources */
 			if (ceetm_release_channel(q->hw_handle))
 				ceetm_err("Error in releasing"
-						" CEETM Channel Scheduler.\n");
+				" CEETM Channel Scheduler.\n");
+			q->hw_handle =NULL;
 			return;
 		} else {
 			ceetm_err("Deletion Allowed via Root Qdisc only!\n");
@@ -754,6 +762,7 @@ static void ceetm_destroy(struct Qdisc *sch)
 	/* Only a Root QDISC shall reach here */
 	/* Unbind filter  */
 	tcf_destroy_chain(&q->filter_list);
+	q->filter_list = NULL;
 
 	/* If CEETM ROOT typw Qdisc then, Destroy attached Class Resourcees */
 	for (i = 0; i < q->clhash.hashsize; i++) {
@@ -762,7 +771,7 @@ static void ceetm_destroy(struct Qdisc *sch)
 #else
 		hlist_for_each_entry(cl, &q->clhash.hash[i], common.hnode)
 #endif
-			tcf_destroy_chain(&cl->filter_list);
+		tcf_destroy_chain(&cl->filter_list);
 	}
 	for (i = 0; i < q->clhash.hashsize; i++) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 0)
@@ -772,7 +781,7 @@ static void ceetm_destroy(struct Qdisc *sch)
 		hlist_for_each_entry_safe(cl, next, &q->clhash.hash[i],
 					common.hnode)
 #endif
-			ceetm_destroy_class(sch, cl);
+		ceetm_destroy_class(sch, cl);
 	}
 	qdisc_class_hash_destroy(&q->clhash);
 	/* Finally Destroy the CEETM LNI*/
