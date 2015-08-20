@@ -140,18 +140,10 @@ int ceetm_enqueue_pkt(void *handle, struct sk_buff *skb)
 
 	struct ceetm_fq *fq = (struct ceetm_fq *)handle;
 	struct qman_fq		*tx_fq = &(fq->egress_fq);
-	struct qm_fd		*tx_fd, fd;
+	struct qman_fq		*conf_fq;
 	struct dpa_priv_s	*priv;
-	struct dpa_bp		*dpa_bp;
-	struct dpa_percpu_priv_s *percpu_priv;
-	struct sk_buff		**skbh;
-	dma_addr_t		addr;
-	enum dma_data_direction dma_dir = DMA_TO_DEVICE;
-	bool	can_recycle = false;
-	int	offset, extra_offset;
-	int	err, i;
-	int *countptr;
 	struct net_device *dev = skb->dev;
+	const int queue_mapping = dpa_get_queue_mapping(skb);
 
 	/* We will not enqueue if Queue is already congested.
 	   This will save lot of ERN interrupts & their handling
@@ -176,138 +168,8 @@ int ceetm_enqueue_pkt(void *handle, struct sk_buff *skb)
 #endif
 		priv = netdev_priv(dev);
 
-	percpu_priv = per_cpu_ptr(priv->percpu_priv, smp_processor_id());
-	countptr = __this_cpu_ptr(priv->dpa_bp->percpu_count);
-	dpa_bp = priv->dpa_bp;
-
-	/* In case, packet is recieved from Linux,
-	   Head room may not be sufficient */
-	if (skb_headroom(skb) < priv->tx_headroom) {
-		struct sk_buff *skb_new;
-
-		skb_new = skb_realloc_headroom(skb, priv->tx_headroom);
-		if (unlikely(!skb_new)) {
-			/* Increment Error Stat */
-			ceetm_err("Headroom Allocation error.\n");
-			return -ENOMEM;
-		}
-		dev_kfree_skb(skb);
-		skb = skb_new;
-	}
-
-	/* TODO, if SKB is cloned & require SG support*/
-	skb = skb_unshare(skb, GFP_ATOMIC);
-	if (!skb)
-		return CEETM_SUCCESS;
-
-	tx_fd = &fd;
-	/* Clear Required field in FD */
-	tx_fd->opaque_addr = 0;
-	tx_fd->opaque = 0;
-	tx_fd->cmd = 0;
-
-#ifdef CONFIG_FSL_DPAA_1588
-	if (priv->tsu && priv->tsu->valid && priv->tsu->hwts_tx_en_ioctl)
-		fd.cmd |= FM_FD_CMD_UPD;
-#endif
-#ifdef CONFIG_FSL_DPAA_TS
-	if (unlikely(priv->ts_tx_en &&
-			skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP))
-		fd.cmd |= FM_FD_CMD_UPD;
-#endif /* CONFIG_FSL_DPAA_TS */
-
-#define DPA_RECYCLE_MAX_SIZE	16384
-/* Maximum offset value for a contig or sg FD (represented on 9bits) */
-#define MAX_FD_OFFSET	((1 << 9) - 1)
-	/* Now Convert SKB to Tx_FD */
-	if (likely(skb_is_recycleable(skb, dpa_bp->size)
-		&& (skb_end_pointer(skb) - skb->head <= DPA_RECYCLE_MAX_SIZE)
-		&& (*countptr < dpa_bp->target_count))) {
-		/* Compute the minimum necessary fd offset */
-		offset = dpa_bp->size - skb->len - skb_tailroom(skb);
-
-		/*
-		 * And make sure the offset is no lower than DPA_BP_HEAD,
-		 * as required by FMan
-		 */
-		offset = max(offset, (int)priv->tx_headroom);
-
-		/*
-		 * We also need to align the buffer address to 16, such that
-		 * Fman will be able to reuse it on Rx.
-		 */
-		extra_offset = (unsigned long)(skb->data - offset) & 0xF;
-		if (likely((offset + extra_offset) <= skb_headroom(skb) &&
-			   (offset + extra_offset) <= MAX_FD_OFFSET)) {
-			/* We're good to go for recycling*/
-			offset += extra_offset;
-			/* can_recycle = true; */
-		}
-	}
-#ifdef CONFIG_FSL_DPAA_TS
-	if (unlikely(priv->ts_tx_en &&
-			skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP)) {
-		/* we need the fd back to get the timestamp */
-		can_recycle = false;
-		skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
-	}
-#endif /* CONFIG_FSL_DPAA_TS */
-	if (can_recycle) {
-		/* Buffer will get recycled, setup fd accordingly */
-		tx_fd->cmd = FM_FD_CMD_FCO;
-		tx_fd->bpid = dpa_bp->bpid;
-		dma_dir = DMA_BIDIRECTIONAL;
-	} else {
-		offset = priv->tx_headroom;
-	}
-
-	skbh = (struct sk_buff **)(skb->data - offset);
-	*skbh = skb;
-
-	tx_fd->format = qm_fd_contig;
-	tx_fd->length20 = skb->len;
-	tx_fd->offset = offset;
-
-	if (!priv->mac_dev || skb->ip_summed != CHECKSUM_PARTIAL) {
-		/* Reaching Here means HW Checksum offloading not required.
-		   We are not implementing this as linux packet
-		   don't use this feature but still putting this
-		   check to catch if any packet comes */
-	} else
-		ceetm_err("HW CHECKSUM Offload handling required..!\n");
-
-	addr = dma_map_single(dpa_bp->dev, skbh, dpa_bp->size, dma_dir);
-	if (unlikely(addr == 0)) {
-		ceetm_err("xmit dma_map Error\n");
-		return -EINVAL;
-	}
-
-	tx_fd->addr_hi = upper_32_bits(addr);
-	tx_fd->addr_lo = lower_32_bits(addr);
-
-	if (can_recycle) {
-		/* Recycle SKB */
-		(*countptr)++;
-		skb_recycle(skb);
-		skb = NULL;
-		percpu_priv->tx_returned++;
-	}
-
-	for (i = 0; i < 100000; i++) {
-		err = qman_enqueue(tx_fq, tx_fd, 0);
-		if (err != -EBUSY)
-			break;
-	}
-	if (unlikely(err < 0)) {
-		if (tx_fd->cmd & FM_FD_CMD_FCO) {
-			(*countptr)--;
-			percpu_priv->tx_returned--;
-		}
-		ceetm_err("QMAN Enqueue Error.\n");
-		return -EINVAL;
-	}
-	dev->trans_start = jiffies;
-	return CEETM_SUCCESS;
+	conf_fq = priv->conf_fqs[queue_mapping];
+	return dpa_tx_extended(skb, dev, tx_fq, conf_fq);
 }
 
 /**
