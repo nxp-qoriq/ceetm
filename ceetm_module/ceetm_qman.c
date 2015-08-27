@@ -19,7 +19,9 @@
 #include <dpa/mac.h>
 #include <lnxwrp_fm.h>
 #include "include/ceetm.h"
-
+#include <linux/netdevice.h>
+#include <linux/if_vlan.h>
+#include <net/dst.h>
 /* ----------------------------- */
 /* CEETM HW COnfiguration APIs   */
 /* ----------------------------- */
@@ -33,6 +35,8 @@ extern int enqueue_pkt_to_oh(struct bonding *bond, struct sk_buff *skb, struct d
 extern int export_oh_port_info_to_ceetm(struct bonding *bond,
 		uint16_t *channel, unsigned long *fman_dcpid,
 		unsigned long *oh_offset, unsigned long *cell_index);
+extern int dev_gso_segment(struct sk_buff *skb, netdev_features_t features);
+extern int dev_set_skb_destructor(struct sk_buff *skb);
 
 /******** Utility Fucntions *********/
 static int get_fm_dcp_id(char *c, uint32_t *res)
@@ -144,6 +148,8 @@ int ceetm_enqueue_pkt(void *handle, struct sk_buff *skb)
 	struct dpa_priv_s	*priv;
 	struct net_device *dev = skb->dev;
 	const int queue_mapping = dpa_get_queue_mapping(skb);
+	unsigned int skb_len;
+	netdev_features_t features;
 
 	/* We will not enqueue if Queue is already congested.
 	   This will save lot of ERN interrupts & their handling
@@ -164,12 +170,61 @@ int ceetm_enqueue_pkt(void *handle, struct sk_buff *skb)
 		  of bonding type */
 		enqueue_pkt_to_oh(bond, skb, (struct dpa_fq *)fq);
 		return CEETM_SUCCESS;
-	} else
+	}
 #endif
-		priv = netdev_priv(dev);
+	priv = netdev_priv(dev);
 
 	conf_fq = priv->conf_fqs[queue_mapping];
-	return dpa_tx_extended(skb, dev, tx_fq, conf_fq);
+	if (likely(!skb->next)) {
+		/*
+		 * If device doesn't need skb->dst, release it right now while
+		 * its hot in this cpu cache
+		 */
+		if (dev->priv_flags & IFF_XMIT_DST_RELEASE)
+			skb_dst_drop(skb);
+
+		features = netif_skb_features(skb);
+
+		if (vlan_tx_tag_present(skb) &&
+		    !vlan_hw_offload_capable(features, skb->vlan_proto)) {
+			skb = __vlan_put_tag(skb, skb->vlan_proto,
+					     vlan_tx_tag_get(skb));
+			if (unlikely(!skb))
+				goto out;
+
+			skb->vlan_tci = 0;
+		}
+
+		if (netif_needs_gso(skb, features)) {
+			if (dev_gso_segment(skb, features))
+				goto out;
+			if (skb->next)
+				goto gso;
+		}
+		skb_len = skb->len;
+		return dpa_tx_extended(skb, dev, tx_fq, conf_fq);
+	}
+
+gso:
+	do {
+		struct sk_buff *nskb = skb->next;
+		skb->next = nskb->next;
+		nskb->next = NULL;
+
+		skb_len = nskb->len;
+
+		if (dpa_tx_extended(nskb, dev, tx_fq, conf_fq) != NETDEV_TX_OK)
+			printk("dpa_tx_extended failed\n");
+	} while (skb->next);
+
+out:
+	if (skb->next == NULL) {
+		dev_set_skb_destructor(skb);
+		consume_skb(skb);
+		return NETDEV_TX_OK;
+	}
+	kfree_skb(skb);
+	return NETDEV_TX_OK;
 }
 
 /**
