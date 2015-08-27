@@ -563,6 +563,8 @@ void ceetm_cfg_prio_leaf_q(void *handle,
 	struct qm_ceetm_lfq *lfq;
 	struct ceetm_fq *fq;
 	struct qm_ceetm_ccg *p = NULL;
+	u64 context_a;
+	u32 context_b;
 
 	/* Find out the congestion group with index '0'*/
 	list_for_each_entry(p, &channel->ccgs, node) {
@@ -595,6 +597,18 @@ void ceetm_cfg_prio_leaf_q(void *handle,
 	lfq->ern = egress_ern;
 	fq->net_dev = dev;
 	spin_lock_init(&(fq->lock));
+
+	if (qman_ceetm_lfq_get_context(lfq, &context_a, &context_b)) {
+		ceetm_err("Failed to get the LFQ context\n");
+		return;
+	}
+
+	context_a = CEETM_CONTEXT_A;
+	if (qman_ceetm_lfq_set_context(lfq, context_a, context_b)) {
+		ceetm_err("Failed to set the LFQ context\n");
+		return;
+	}
+
 	if (qman_ceetm_create_fq(lfq, &fq->egress_fq)) {
 		kfree(fq);
 		return;
@@ -639,6 +653,8 @@ void ceetm_cfg_wbfs_leaf_q(void *handle,
 	struct qm_ceetm_lfq *lfq;
 	struct ceetm_fq *fq;
 	struct qm_ceetm_ccg *p = NULL;
+	u64 context_a;
+	u32 context_b;
 
 	/* claim a class queue */
 	if (grp == CEETM_WBFS_GRP_B) {
@@ -696,6 +712,18 @@ void ceetm_cfg_wbfs_leaf_q(void *handle,
 		return;
 	lfq->ern = egress_ern;
 	fq->net_dev = dev;
+
+	if (qman_ceetm_lfq_get_context(lfq, &context_a, &context_b)) {
+		ceetm_err("Failed to get the LFQ context\n");
+		return;
+	}
+
+	context_a = CEETM_CONTEXT_A;
+	if (qman_ceetm_lfq_set_context(lfq, context_a, context_b)) {
+		ceetm_err("Failed to set the LFQ context\n");
+		return;
+	}
+
 	if (qman_ceetm_create_fq(lfq, &fq->egress_fq))
 		return;
 	/* All is well */
