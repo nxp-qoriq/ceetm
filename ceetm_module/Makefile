@@ -7,7 +7,7 @@
 # */
 
 PWD := $(shell pwd)
-include $(KERNEL_PATH)/.config
+include $(KBUILD_OUTPUT)/.config
 
 CC	= $(CROSS_COMPILE)gcc
 AR	= $(CROSS_COMPILE)ar
