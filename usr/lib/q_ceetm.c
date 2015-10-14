@@ -25,28 +25,6 @@
 #include "utils.h"
 #include "tc_util.h"
 
-static void print_rate(char *buf, int len, uint32_t rate)
-{
-	int use_iec = 1;
-
-	double tmp = (double)rate*8;
-	if (use_iec) {
-		if (tmp >= 1000*1024*1024)
-			snprintf(buf, len, "%.0fMibit", tmp/(1024*1024));
-		else if (tmp >= 1000*1024)
-			snprintf(buf, len, "%.0fKibit", tmp/1024);
-		else
-			snprintf(buf, len, "%.0fbit", tmp);
-	} else {
-		if (tmp >= 1000*1000000)
-			snprintf(buf, len, "%.0fMbit", tmp/1000000);
-		else if (tmp >= 1000*1000)
-			snprintf(buf, len, "%.0fKbit", tmp/1000);
-		else
-			snprintf(buf, len, "%.0fbit",  tmp);
-	}
-}
-
 
 static void explain(void)
 {
