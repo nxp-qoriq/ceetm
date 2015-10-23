@@ -28,8 +28,8 @@
 
 #define CEETM_SUCCESS	0
 
-/*sub portal index of DPAA 1G port = cell index + 2*/
-#define CEETM_OFFSET_1G	2
+/* The mask of the SP in the QMI */
+#define QMI_SUBPORTAL_MASK	0x1f
 /*sub portal index of DPAA OH port = cell index + 9*/
 #define CEETM_OFFSET_OH	9
 

@@ -61,10 +61,21 @@ static int get_tx_port_type(struct mac_device *mac_dev)
 	t_LnxWrpFmPortDev   *p_LnxWrpFmPortDev =
 		(t_LnxWrpFmPortDev *)mac_dev->port_dev[TX];
 
-
-	ceetm_dbg("FM sub-portal IDX is %d\n",  p_LnxWrpFmPortDev->id);
+	ceetm_dbg("FM port ID is %d\n",  p_LnxWrpFmPortDev->id);
 	return p_LnxWrpFmPortDev->settings.param.portType;
 }
+
+static uint32_t get_tx_port_sp(struct mac_device *mac_dev)
+{
+	t_LnxWrpFmPortDev *port_dev =
+		(t_LnxWrpFmPortDev *)mac_dev->port_dev[TX];
+	uint32_t qmi =
+		port_dev->settings.param.specificParams.nonRxParams.qmChannel;
+
+	ceetm_dbg("FM sub-portal ID is %d\n", qmi & QMI_SUBPORTAL_MASK);
+	return qmi & QMI_SUBPORTAL_MASK;
+}
+
 void ceetm_inc_drop_cnt(void *handle)
 {
 	struct ceetm_fq *ceetm_fq = (struct ceetm_fq *)handle;
@@ -285,13 +296,12 @@ void ceetm_cfg_lni(struct net_device *dev,
 			ceetm_dbg("Port_type is 10G\n");
 			/* Using LNI 0 & 1 for 10G ports only */
 			lni_idx = ceetm_10g_lni_index[dcp_id]++;
-			sp_idx = mac_dev->cell_index;
 		} else {
 			ceetm_dbg("Port_type is 1G\n");
 			lni_idx = ceetm_1g_lni_index[dcp_id]++;
-			sp_idx = mac_dev->cell_index + CEETM_OFFSET_1G;
 		}
 
+		sp_idx = get_tx_port_sp(mac_dev);
 #ifdef CONFIG_BONDING
 	}
 #endif
