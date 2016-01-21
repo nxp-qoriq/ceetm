@@ -100,12 +100,10 @@ static void explain1(int type_mode)
 		fprintf(stderr, "\nINCORRECT COMMAND LINE\n");
 }
 
-static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
+static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 		struct nlmsghdr *n)
 {
 	struct tc_ceetm_qopt opt;
-	unsigned short mpu = 0;
-	unsigned short overhead = 0;
 	unsigned short queue = 0;
 	int ceetm_weight_mode = 0;
 	int ceetm_cr_mode = 0;
@@ -119,30 +117,33 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 	struct rtattr *tail;
 	memset(&opt, 0, sizeof(opt));
 	int i = 0;
-	for (i ; i < 8 ; i++) {
+	/*for (i ; i < 8 ; i++) {
 		opt.cr_map[i] = (__u8)1;
 		opt.er_map[i] = (__u8)1;
-	}
+	}*/
 
 	while (argc > 0) {
 		if (strcmp(*argv, "type") == 0) {
 			if (opt.type) {
-				fprintf(stderr, "Double \"type\" spec\n");
+				fprintf(stderr, "type already specified\n");
 				return -1;
 			}
+
 			NEXT_ARG();
 			if (matches(*argv, "root") == 0)
-				opt.type = CEETM_Q_ROOT;
-			else if (matches(*argv, "prio") == 0)
-				opt.type = CEETM_Q_PRIO;
-			else if (matches(*argv, "wbfs") == 0)
-				opt.type = CEETM_Q_WBFS;
+				opt.type = CEETM_Q_LNI;
 			else {
-				explain();
+				fprintf(stderr, "Illegal type argument\n");
 				return -1;
 			}
+
 		} else if (strcmp(*argv, "rate") == 0) {
-			if (opt.type != CEETM_Q_ROOT) {
+			if (opt.type == CEETM_Q_LNI) {
+				fprintf(stderr, "Too many arguments.\n");
+				return -1;
+			}
+
+			/*if (opt.type != CEETM_Q_ROOT) {
 				if (opt.type)
 					explain1(opt.type);
 				else
@@ -166,35 +167,13 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 							"type of qdisc after "
 							"ceetm.\n");
 				return -1;
-			}
-		} else if (strcmp(*argv, "mpu") == 0) {
-			if (opt.type != CEETM_Q_ROOT) {
-				if (opt.type)
-					explain1(opt.type);
-				else
-					fprintf(stderr, "Error:"
-							"Mention the "
-							"type of qdisc after "
-							"ceetm.\n");
+			}*/
+		/*} else if (strcmp(*argv, "overhead") == 0) {
+			if (opt.type == CEETM_Q_LNI) {
+				fprintf(stderr, "Too many arguments.\n");
 				return -1;
 			}
-			if (opt.mpu) {
-				fprintf(stderr, "Double \"mpu\" spec\n");
-				return -1;
-			}
-			NEXT_ARG();
-			if (get_u16(&mpu, *argv, 10)) {
-				if (opt.type)
-					explain1(opt.type);
-				else
-					fprintf(stderr, "Error:"
-							"Mention the "
-							"type of qdisc after "
-							"ceetm.\n");
-				return -1;
-			}
-			opt.mpu = mpu;
-		} else if (strcmp(*argv, "overhead") == 0) {
+
 			if (opt.type != CEETM_Q_ROOT) {
 				if (opt.type)
 					explain1(opt.type);
@@ -220,9 +199,14 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 							"ceetm.\n");
 				return -1;
 			}
-			opt.overhead = overhead;
+			opt.overhead = overhead;*/
 		} else if (strcmp(*argv, "ceil") == 0) {
-			if (opt.type != CEETM_Q_ROOT) {
+			if (opt.type == CEETM_Q_LNI) {
+				fprintf(stderr, "Too many arguments.\n");
+				return -1;
+			}
+
+			/*if (opt.type != CEETM_Q_ROOT) {
 				if (opt.type)
 					explain1(opt.type);
 				else
@@ -246,9 +230,14 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 							"type of qdisc after "
 							"ceetm.\n");
 				return -1;
-			}
+			}*/
 		} else if (strcmp(*argv, "queues") == 0) {
-			if (opt.type != CEETM_Q_WBFS) {
+			if (opt.type == CEETM_Q_LNI) {
+				fprintf(stderr, "Too many arguments.\n");
+				return -1;
+			}
+
+			/*if (opt.type != CEETM_Q_WBFS) {
 				if (opt.type)
 					explain1(opt.type);
 				else
@@ -278,9 +267,14 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 			opt.queues = queue;
-			ceetm_queue_mode = 1;
+			ceetm_queue_mode = 1;*/
 		} else if (strcmp(*argv, "cr_map") == 0) {
-			if (ceetm_cr_mode) {
+			if (opt.type == CEETM_Q_LNI) {
+				fprintf(stderr, "Too many arguments.\n");
+				return -1;
+			}
+
+			/*if (ceetm_cr_mode) {
 				fprintf(stderr, "Error: duplicate cr_map\n");
 				return -1;
 			}
@@ -297,9 +291,14 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			ceetm_queue_mode = 0;
 			ceetm_er_mode = 0;
 			ceetm_cr_mode = 1;
-			cr = 1;
+			cr = 1;*/
 		} else if (strcmp(*argv, "er_map") == 0) {
-			if (ceetm_er_mode) {
+			if (opt.type == CEETM_Q_LNI) {
+				fprintf(stderr, "Too many arguments.\n");
+				return -1;
+			}
+
+			/*if (ceetm_er_mode) {
 				fprintf(stderr, "Error: duplicate er_map\n");
 				return -1;
 			}
@@ -316,9 +315,9 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			ceetm_queue_mode = 0;
 			ceetm_cr_mode = 0;
 			ceetm_er_mode = 1;
-			er = 1;
+			er = 1;*/
 		} else {
-			if (ceetm_queue_mode) {
+			/*if (ceetm_queue_mode) {
 				__u32 num;
 				if (opt.type == CEETM_Q_WBFS && !opt.queues) {
 					if (opt.type)
@@ -427,25 +426,12 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 			} else {
 				explain();
 				return -1;
-			}
+			}*/
+			fprintf(stderr, "Illegal argument\n");
 		}
 		argc--; argv++;
 	}
-	if (opt.type == CEETM_Q_ROOT) {
-		if (opt.rate) {
-			if (!opt.overhead || !opt.mpu) {
-				explain1(1);
-				return -1;
-			}
-		} else {
-			if (opt.overhead || opt.mpu || opt.ceil) {
-				explain1(1);
-				return -1;
-			}
-		}
-
-	}
-	if (opt.type == CEETM_Q_PRIO) {
+	/*if (opt.type == CEETM_Q_PRIO) {
 		if (ceetm_cr_mode || ceetm_er_mode) {
 			explain1(2);
 			return -1;
@@ -484,26 +470,82 @@ static int ceetm_parse_opt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 		}
-	}
+	}*/
+
+	/*if (opt.type == CEETM_Q_LNI) {
+		if (opt.rate || opt.ceil || opt.queues) {
+			fprintf(stderr, "Too many arguments.\n");
+			return -1;
+		}
+	}*/
+
 	tail = NLMSG_TAIL(n);
 	addattr_l(n, 1024, TCA_OPTIONS, NULL, 0);
-	addattr_l(n, 1024, TCA_CEETM_INIT, &opt, sizeof(opt));
+	addattr_l(n, 1024, TCA_CEETM_QOPS, &opt, sizeof(opt));
 	tail->rta_len = (void *) NLMSG_TAIL(n) - (void *) tail;
 
 	return 0;
 }
 
-static int ceetm_parse_class_opt(struct qdisc_util *qu, int argc, char **argv,
+static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 		struct nlmsghdr *n)
 {
 	struct tc_ceetm_copt opt;
 	struct rtattr *tail;
-	__u32 weight = 0;
-	int ceetm_weight_mode = 0;
 	memset(&opt, 0, sizeof(opt));
+	//__u32 weight = 0;
+	//int ceetm_weight_mode = 0;
 
 	while (argc > 0) {
 		if (strcmp(*argv, "rate") == 0) {
+			if (opt.rate) {
+				fprintf(stderr, "rate already specified\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (get_rate(&opt.rate, *argv)) {
+				fprintf(stderr, "Illegal rate argument\n");
+				return -1;
+			}
+
+			if (opt.rate == 0) {
+				fprintf(stderr, "rate can not be 0\n");
+				return -1;
+			}
+
+		} else if (strcmp(*argv, "ceil") == 0) {
+			if (opt.ceil) {
+				fprintf(stderr, "ceil already specified\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (get_rate(&opt.ceil, *argv)) {
+				fprintf(stderr, "Illegal ceil argument\n");
+				return -1;
+			}
+
+		} else if (strcmp(*argv, "overhead") == 0) {
+			if (opt.overhead) {
+				fprintf(stderr, "overhead already specified\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (get_u16(&opt.overhead, *argv, 10)) {
+				fprintf(stderr, "Illegal overhead argument\n");
+				return -1;
+			}
+
+		} else {
+			fprintf(stderr, "Illegal argument\n");
+			return -1;
+		}
+
+		argc--; argv++;
+
+		/*} else if (strcmp(*argv, "rate") == 0) {
 			if (ceetm_weight_mode) {
 				explain1(0);
 				return -1;
@@ -551,9 +593,10 @@ static int ceetm_parse_class_opt(struct qdisc_util *qu, int argc, char **argv,
 			explain();
 			return -1;
 		}
-		argc--; argv++;
+		argc--; argv++;*/
 	}
-	if (opt.weight) {
+
+	/*if (opt.weight) {
 		if (opt.rate || opt.ceil) {
 			explain1(0);
 			return -1;
@@ -563,7 +606,15 @@ static int ceetm_parse_class_opt(struct qdisc_util *qu, int argc, char **argv,
 			explain1(0);
 			return -1;
 		}
+	}*/
+
+	if ((opt.ceil && !(opt.overhead && opt.rate)) ||
+					(opt.overhead && !opt.rate) ||
+					(opt.rate && !opt.overhead)) {
+		fprintf(stderr, "rate and overhead are mandatory for a shaped classes\n");
+		return -1;
 	}
+
 	tail = NLMSG_TAIL(n);
 	addattr_l(n, 1024, TCA_OPTIONS, NULL, 0);
 	addattr_l(n, 2024, TCA_CEETM_COPT, &opt, sizeof(opt));
@@ -583,11 +634,11 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 
 	parse_rtattr_nested(tb, TCA_CEETM_MAX, opt);
 
-	if (tb[TCA_CEETM_INIT]) {
-		if (RTA_PAYLOAD(tb[TCA_CEETM_INIT]) < sizeof(*qopt))
+	if (tb[TCA_CEETM_QOPS]) {
+		if (RTA_PAYLOAD(tb[TCA_CEETM_QOPS]) < sizeof(*qopt))
 			fprintf(stderr, "CEETM: too short opt\n");
 		else
-			qopt = RTA_DATA(tb[TCA_CEETM_INIT]);
+			qopt = RTA_DATA(tb[TCA_CEETM_QOPS]);
 	}
 
 	if (tb[TCA_CEETM_COPT]) {
@@ -596,10 +647,14 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 		else
 			copt = RTA_DATA(tb[TCA_CEETM_COPT]);
 	}
+
 	if (qopt) {
 		char buf[64];
 		int i;
-		if (qopt->type == CEETM_Q_ROOT) {
+		if (qopt->type == CEETM_Q_LNI) {
+			fprintf(f, "type root");
+		}
+		/*if (qopt->type == CEETM_Q_ROOT) {
 			fprintf(f, "type root ");
 			if (qopt->rate) {
 				print_rate(buf, sizeof(buf), qopt->rate);
@@ -608,12 +663,8 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 			if (qopt->ceil) {
 				print_rate(buf, sizeof(buf), qopt->ceil);
 				fprintf(f, "ceil %s ", buf);
-			}
-			if (qopt->mpu)
-				fprintf(f, "mpu %u ", qopt->mpu);
-			if (qopt->overhead)
-				fprintf(f, "overhead %u ", qopt->overhead);
-		} else if (qopt->type == CEETM_Q_PRIO) {
+			}*/
+		/*} else if (qopt->type == CEETM_Q_PRIO) {
 			fprintf(f, "type prio ");
 
 			fprintf(f, "cr_map ");
@@ -622,8 +673,8 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 
 			fprintf(f, "er_map ");
 			for (i = 0; i <= 7; i++)
-				fprintf(f, "%u ", qopt->er_map[i]);
-		} else if (qopt->type == CEETM_Q_WBFS) {
+				fprintf(f, "%u ", qopt->er_map[i]);*/
+		/*} else if (qopt->type == CEETM_Q_WBFS) {
 			fprintf(f, "type wbfs ");
 
 			fprintf(f, "queues %u ", qopt->queues);
@@ -637,20 +688,23 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 
 			fprintf(f, " er_map ");
 			fprintf(f, "%u ", qopt->er_map[0]);
-		}
+		}*/
 	}
+
 	if (copt) {
 		char buf[64];
+
 		if (copt->rate) {
 			print_rate(buf, sizeof(buf), copt->rate);
-			fprintf(f, "rate %s ", buf);
-		}
-		if (copt->ceil) {
+			fprintf(f, "shaped rate %s ", buf);
+
 			print_rate(buf, sizeof(buf), copt->ceil);
 			fprintf(f, "ceil %s ", buf);
-		}
-		if (copt->weight)
-			fprintf(f, "weight %u ", copt->weight);
+
+			fprintf(f, "overhead %u ", copt->overhead);
+
+		} else
+			fprintf(f, "unshaped", buf);
 	}
 
 	return 0;
@@ -675,9 +729,9 @@ static int ceetm_print_xstats(struct qdisc_util *qu, FILE *f, struct rtattr *xst
 
 struct qdisc_util ceetm_qdisc_util = {
 	.id	 	= "ceetm",
-	.parse_qopt	= ceetm_parse_opt,
+	.parse_qopt	= ceetm_parse_qopt,
 	.print_qopt	= ceetm_print_opt,
-	.print_xstats	= ceetm_print_xstats,
-	.parse_copt	= ceetm_parse_class_opt,
+	.parse_copt	= ceetm_parse_copt,
 	.print_copt	= ceetm_print_opt,
+	.print_xstats	= ceetm_print_xstats,
 };
