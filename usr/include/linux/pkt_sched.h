@@ -390,14 +390,19 @@ enum {
 #define TCA_CEETM_MAX (__TCA_CEETM_MAX - 1)
 
 enum {
-	CEETM_Q_LNI,
-	CEETM_Q_CHNL,
+	CEETM_Q_LNI = 1,
+	CEETM_Q_SH_CHNL,
+	CEETM_Q_UNSH_CHNL,
 	CEETM_Q_WBFS
 };
 
 /* CEETM Qdisc configuration parameters */
 struct tc_ceetm_qopt {
 	__u32	type;
+	__u16	qcount;
+	__u16	weight;
+	__u32	rate;
+	__u32	ceil;
 };
 
 /* CEETM Class configuration parameters */
