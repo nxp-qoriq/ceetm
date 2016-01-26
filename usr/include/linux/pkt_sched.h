@@ -410,6 +410,9 @@ struct tc_ceetm_copt {
 	__u32	rate;
 	__u32	ceil;
 	__u16	overhead;
+	__u16	shaped;
+	__u16	cr;
+	__u16	er;
 };
 
 /* CEETM stats */

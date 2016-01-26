@@ -753,17 +753,23 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	if (copt) {
 		char buf[64];
 
-		if (copt->rate) {
-			print_rate(buf, sizeof(buf), copt->rate);
-			fprintf(f, "shaped rate %s ", buf);
+		if (copt->shaped) {
+			if (copt->rate) {
+				print_rate(buf, sizeof(buf), copt->rate);
+				fprintf(f, "shaped rate %s ", buf);
 
-			print_rate(buf, sizeof(buf), copt->ceil);
-			fprintf(f, "ceil %s ", buf);
+				print_rate(buf, sizeof(buf), copt->ceil);
+				fprintf(f, "ceil %s ", buf);
 
-			fprintf(f, "overhead %u ", copt->overhead);
+				fprintf(f, "overhead %u ", copt->overhead);
 
-		} else
-			fprintf(f, "unshaped", buf);
+			} else {
+				fprintf(f, "shaped CR %d ER %d", copt->cr, copt->er);
+			}
+
+		} else {
+			fprintf(f, "unshaped");
+		}
 	}
 
 	return 0;
