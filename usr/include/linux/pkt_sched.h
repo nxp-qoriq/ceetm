@@ -391,8 +391,7 @@ enum {
 
 enum {
 	CEETM_Q_LNI = 1,
-	CEETM_Q_SH_CHNL,
-	CEETM_Q_UNSH_CHNL,
+	CEETM_Q_CHNL,
 	CEETM_Q_WBFS
 };
 
@@ -400,7 +399,7 @@ enum {
 struct tc_ceetm_qopt {
 	__u32	type;
 	__u16	qcount;
-	__u16	weight;
+	__u16	overhead;
 	__u32	rate;
 	__u32	ceil;
 };
@@ -409,7 +408,7 @@ struct tc_ceetm_qopt {
 struct tc_ceetm_copt {
 	__u32	rate;
 	__u32	ceil;
-	__u16	overhead;
+	__u16	weight;
 	__u16	shaped;
 	__u16	cr;
 	__u16	er;
