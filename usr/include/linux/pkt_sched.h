@@ -377,7 +377,7 @@ struct tc_htb_xstats {
 
 /* CEETM section */
 
-/* CEETM Qdsic Types*/
+/* Maximum number of CEETM CQs that can be linked to a channel (prio qdisc) */
 #define TC_CEETM_MAX_CQ_COUNT	8
 
 enum {
@@ -389,37 +389,40 @@ enum {
 
 #define TCA_CEETM_MAX (__TCA_CEETM_MAX - 1)
 
+/* CEETM configuration types */
 enum {
-	CEETM_Q_LNI = 1,
-	CEETM_Q_CHNL,
-	CEETM_Q_WBFS
+	CEETM_ROOT = 1,
+	CEETM_PRIO,
+	CEETM_WBFS
 };
 
 /* CEETM Qdisc configuration parameters */
 struct tc_ceetm_qopt {
-	__u32	type;
-	__u16	qcount;
-	__u16	overhead;
-	__u32	rate;
-	__u32	ceil;
+	__u32 type;
+	__u16 shaped;
+	__u16 qcount;
+	__u16 overhead;
+	__u32 rate;
+	__u32 ceil;
 };
 
 /* CEETM Class configuration parameters */
 struct tc_ceetm_copt {
-	__u32	rate;
-	__u32	ceil;
-	__u16	weight;
-	__u16	shaped;
-	__u16	cr;
-	__u16	er;
+	__u32 type;
+	__u16 shaped;
+	__u32 rate;
+	__u32 ceil;
+	__u16 tbl;
+	__u16 cr;
+	__u16 er;
 };
 
 /* CEETM stats */
 struct tc_ceetm_xstats {
-	__u64		enqueue;
-	__u64		drop;
-	__u64		dequeue;
-	__u64		deq_bytes;
+	__u64 enqueue;
+	__u64 drop;
+	__u64 dequeue;
+	__u64 deq_bytes;
 };
 
 /* HFSC section */

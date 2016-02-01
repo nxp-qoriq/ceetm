@@ -21,6 +21,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "utils.h"
 #include "tc_util.h"
@@ -104,23 +105,11 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 		struct nlmsghdr *n)
 {
 	struct tc_ceetm_qopt opt;
-	unsigned short queue = 0;
-	int ceetm_weight_mode = 0;
-	int ceetm_cr_mode = 0;
-	int cr = 0;
-	int ceetm_er_mode = 0;
-	int er = 0;
-	int ceetm_queue_mode = 0;
-	int count_q = 0;
-	int id_cr = 0;
-	int id_er = 0;
+	bool overhead_set = false;
+	bool rate_set = false;
+	bool ceil_set = false;
 	struct rtattr *tail;
 	memset(&opt, 0, sizeof(opt));
-	int i = 0;
-	/*for (i ; i < 8 ; i++) {
-		opt.cr_map[i] = (__u8)1;
-		opt.er_map[i] = (__u8)1;
-	}*/
 
 	while (argc > 0) {
 		if (strcmp(*argv, "type") == 0) {
@@ -132,10 +121,10 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 			NEXT_ARG();
 
 			if (matches(*argv, "root") == 0)
-				opt.type = CEETM_Q_LNI;
+				opt.type = CEETM_ROOT;
 
 			else if (matches(*argv, "prio") == 0)
-				opt.type = CEETM_Q_CHNL;
+				opt.type = CEETM_PRIO;
 
 			else {
 				fprintf(stderr, "Illegal type argument\n");
@@ -148,7 +137,7 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 						"type before the qcount.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_Q_CHNL) {
+			} else if (opt.type != CEETM_PRIO) {
 				fprintf(stderr, "qcount belongs to prio qdiscs only.\n");
 				return -1;
 			}
@@ -164,23 +153,23 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-			if (opt.qcount < 1 || opt.qcount > 8) {
+			if (opt.qcount < 1 || opt.qcount > TC_CEETM_MAX_CQ_COUNT) {
 				fprintf(stderr, "qcount must be between 1 and 8\n");
 				return -1;
 			}
 
 		} else if (strcmp(*argv, "rate") == 0) {
 			if (!opt.type) {
-				fprintf(stderr, "Please specify the qdisc type \
-							before the rate.\n");
+				fprintf(stderr, "Please specify the qdisc type "
+							"before the rate.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_Q_LNI) {
+			} else if (opt.type != CEETM_ROOT) {
 				fprintf(stderr, "rate belongs to root qdiscs only.\n");
 				return -1;
 			}
 
-			if (opt.rate) {
+			if (rate_set) {
 				fprintf(stderr, "rate already specified\n");
 				return -1;
 			}
@@ -191,23 +180,20 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-			if (opt.rate == 0) {
-				fprintf(stderr, "rate can not be 0\n");
-				return -1;
-			}
+			rate_set = true;
 
 		} else if (strcmp(*argv, "ceil") == 0) {
 			if (!opt.type) {
-				fprintf(stderr, "Please specify the qdisc type \
-							before the ceil.\n");
+				fprintf(stderr, "Please specify the qdisc type "
+							"before the ceil.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_Q_LNI) {
+			} else if (opt.type != CEETM_ROOT) {
 				fprintf(stderr, "ceil belongs to root qdiscs only.\n");
 				return -1;
 			}
 
-			if (opt.ceil) {
+			if (ceil_set) {
 				fprintf(stderr, "ceil already specified\n");
 				return -1;
 			}
@@ -218,18 +204,20 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
+			ceil_set = true;
+
 		} else if (strcmp(*argv, "overhead") == 0) {
 			if (!opt.type) {
-				fprintf(stderr, "Please specify the qdisc type \
-							before the overhead.\n");
+				fprintf(stderr, "Please specify the qdisc type "
+							"before the overhead.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_Q_LNI) {
+			} else if (opt.type != CEETM_ROOT) {
 				fprintf(stderr, "overhead belongs to root qdiscs only.\n");
 				return -1;
 			}
 
-			if (opt.overhead) {
+			if (overhead_set) {
 				fprintf(stderr, "overhead already specified\n");
 				return -1;
 			}
@@ -240,246 +228,34 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-		/*} else if (strcmp(*argv, "queues") == 0) {
-			if (opt.type != CEETM_Q_WBFS) {
-				if (opt.type)
-					explain1(opt.type);
-				else
-					fprintf(stderr, "Error:"
-							"Mention the "
-							"type of qdisc after "
-							"ceetm.\n");
-				return -1;
-			}
-			if (opt.queues) {
-				fprintf(stderr, "Double \"queues\" spec\n");
-				return -1;
-			}
-			NEXT_ARG();
-			if (get_u16(&queue, *argv, 0)) {
-				explain();
-				return -1;
-			}
-			if (queue != (__u8)4 && queue != (__u8)8) {
-				if (opt.type)
-					explain1(opt.type);
-				else
-					fprintf(stderr, "Error:"
-							"Mention the "
-							"type of qdisc after "
-							"ceetm.\n");
-				return -1;
-			}
-			opt.queues = queue;
-			ceetm_queue_mode = 1;*/
-		/*} else if (strcmp(*argv, "cr_map") == 0) {
-			if (ceetm_cr_mode) {
-				fprintf(stderr, "Error: duplicate cr_map\n");
-				return -1;
-			}
-			if (opt.type == CEETM_Q_ROOT) {
-				if (opt.type)
-					explain1(opt.type);
-				else
-					fprintf(stderr, "Error:"
-							"Mention the "
-							"type of qdisc after "
-							"ceetm.\n");
-				return -1;
-			}
-			ceetm_queue_mode = 0;
-			ceetm_er_mode = 0;
-			ceetm_cr_mode = 1;
-			cr = 1;*/
-		/*} else if (strcmp(*argv, "er_map") == 0) {
-			if (ceetm_er_mode) {
-				fprintf(stderr, "Error: duplicate er_map\n");
-				return -1;
-			}
-			if (opt.type == CEETM_Q_ROOT) {
-				if (opt.type)
-					explain1(opt.type);
-				else
-					fprintf(stderr, "Error:"
-							"Mention the "
-							"type of qdisc after "
-							"ceetm.\n");
-				return -1;
-			}
-			ceetm_queue_mode = 0;
-			ceetm_cr_mode = 0;
-			ceetm_er_mode = 1;
-			er = 1;*/
+			overhead_set = 1;
+
 		} else {
-			/*if (ceetm_queue_mode) {
-				__u32 num;
-				if (opt.type == CEETM_Q_WBFS && !opt.queues) {
-					if (opt.type)
-						explain1(opt.type);
-					else
-						fprintf(stderr, "Error:"
-							"Mention"
-							 "the "
-							"type of"
-							"qdisc "
-							"after "
-							"ceetm."
-							"\n"
-							);
-					return -1;
-				}
-				if (count_q >= opt.queues) {
-					if (opt.type)
-						explain1(opt.type);
-					else
-						fprintf(stderr, "Error:"
-							"Mention"
-							"the type of "
-							"qdisc after "
-							"ceetm.\n"
-							);
-					return -1;
-				}
-				if (get_u32(&num, *argv, 0)) {
-					if (opt.type)
-						explain1(opt.type);
-					else
-						fprintf(stderr, "Error:"
-							"Mention"
-							"the type of "
-							"qdisc after"
-							"ceetm.\n"
-							);
-					return -1;
-				}
-				if (num < 1 || num > 248) {
-					fprintf(stderr, "Error:\n"
-						"weight should "
-						"be in the range "
-						"[1, 248]\n"
-						);
-					return -1;
-				}
-				opt.weight[count_q++] = num;
-				if (count_q >= opt.queues)
-					ceetm_queue_mode = 0;
-			} else if (ceetm_cr_mode) {
-				__u8 num;
-				if (get_u8(&num, *argv, 0)) {
-					if (opt.type)
-						explain1(opt.type);
-					else
-						fprintf(stderr, "Error:"
-							"Mention"
-							"the type of "
-							"qdisc after"
-							"ceetm.\n"
-							);
-					return -1;
-				}
-				if (num != (__u8)1 && num != (__u8)0) {
-					fprintf(stderr, "Error:"
-						"cr_map could "
-						"have values either 1 "
-						"or 0.\n"
-						);
-					return -1;
-				}
-				opt.cr_map[id_cr++] = num;
-				if (opt.type == CEETM_Q_PRIO && id_cr >= 8 ||
-						opt.type == CEETM_Q_WBFS && id_cr
-						>= 1)
-					ceetm_cr_mode = 0;
-			} else if (ceetm_er_mode) {
-				__u8 num;
-				if (get_u8(&num, *argv, 0)) {
-					if (opt.type)
-						explain1(opt.type);
-					else
-						fprintf(stderr, "Error:"
-							"Mention"
-							"the type of "
-							"qdisc after"
-							"ceetm.\n"
-							);
-					return -1;
-				}
-				if (num != (__u8)1 && num != (__u8)0) {
-					fprintf(stderr, "Error:"
-						"er_map could "
-						"have values either 1 "
-						"or 0.\n"
-						);
-					return -1;
-				}
-				opt.er_map[id_er++] = num;
-				if (opt.type == CEETM_Q_PRIO && id_er >= 8 ||
-						opt.type == CEETM_Q_WBFS && id_er
-						>= 1)
-					ceetm_er_mode = 0;
-			} else {
-				explain();
-				return -1;
-			}*/
 			fprintf(stderr, "Illegal argument\n");
 		}
+
 		argc--; argv++;
-	}
-	/*if (opt.type == CEETM_Q_PRIO) {
-		if (ceetm_cr_mode || ceetm_er_mode) {
-			explain1(2);
-			return -1;
-		}
-		if (cr) {
-			if (id_cr < 8) {
-				explain1(2);
-				return -1;
-			}
-		}
-		if (er) {
-			if (id_er < 8) {
-				explain1(2);
-				return -1;
-			}
-		}
-	}
-	if (opt.type == CEETM_Q_WBFS) {
-		if (ceetm_cr_mode || ceetm_er_mode) {
-			explain1(3);
-			return -1;
-		}
-		if (count_q != opt.queues) {
-			explain1(3);
-			return -1;
-		}
-		if (cr) {
-			if (id_cr > 1) {
-				explain1(3);
-				return -1;
-			}
-		}
-		if (er) {
-			if (id_er > 1) {
-				explain1(3);
-				return -1;
-			}
-		}
-	}*/
-
-	if (opt.type == CEETM_Q_CHNL && !opt.qcount) {
-		fprintf(stderr, "qcount is mandatory for a prio qdisc\n");
-		return -1;
-	}
-
-	if (opt.type == CEETM_Q_LNI && (opt.ceil || opt.overhead) && !opt.rate) {
-		fprintf(stderr, "rate is mandatory for a shaped root qdisc\n");
-		return -1;
 	}
 
 	if (!opt.type) {
 		fprintf(stderr, "please specify the qdisc type\n");
 		return -1;
 	}
+
+	if (opt.type == CEETM_ROOT && (ceil_set || overhead_set) && !rate_set) {
+		fprintf(stderr, "rate is mandatory for a shaped root qdisc\n");
+		return -1;
+	}
+
+	if (opt.type == CEETM_PRIO && !opt.qcount) {
+		fprintf(stderr, "qcount is mandatory for a prio qdisc\n");
+		return -1;
+	}
+
+	if (opt.type == CEETM_ROOT && rate_set)
+		opt.shaped = 1;
+	else
+		opt.shaped = 0;
 
 	tail = NLMSG_TAIL(n);
 	addattr_l(n, 1024, TCA_OPTIONS, NULL, 0);
@@ -495,12 +271,41 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 	struct tc_ceetm_copt opt;
 	struct rtattr *tail;
 	memset(&opt, 0, sizeof(opt));
-	//__u32 weight = 0;
-	//int ceetm_weight_mode = 0;
+	bool tbl_set = false;
+	bool rate_set = false;
+	bool ceil_set = false;
 
 	while (argc > 0) {
-		if (strcmp(*argv, "rate") == 0) {
-			if (opt.rate) {
+		if (strcmp(*argv, "type") == 0) {
+			if (opt.type) {
+				fprintf(stderr, "type already specified\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (matches(*argv, "root") == 0) {
+				opt.type = CEETM_ROOT;
+
+			} else if (matches(*argv, "prio") == 0) {
+				opt.type = CEETM_PRIO;
+
+			} else {
+				fprintf(stderr, "Illegal type argument\n");
+				return -1;
+			}
+
+		} else if (strcmp(*argv, "rate") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the class type "
+							"before the rate.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_ROOT) {
+				fprintf(stderr, "rate belongs to root classes only.\n");
+				return -1;
+			}
+
+			if (rate_set) {
 				fprintf(stderr, "rate already specified\n");
 				return -1;
 			}
@@ -511,13 +316,20 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-			if (opt.rate == 0) {
-				fprintf(stderr, "rate can not be 0\n");
+			rate_set = true;
+
+		} else if (strcmp(*argv, "ceil") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the class type "
+							"before the ceil.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_ROOT) {
+				fprintf(stderr, "ceil belongs to root classes only.\n");
 				return -1;
 			}
 
-		} else if (strcmp(*argv, "ceil") == 0) {
-			if (opt.ceil) {
+			if (ceil_set) {
 				fprintf(stderr, "ceil already specified\n");
 				return -1;
 			}
@@ -528,20 +340,33 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-		} else if (strcmp(*argv, "weight") == 0) {
-			if (opt.weight) {
-				fprintf(stderr, "weight already specified\n");
+			ceil_set = true;
+
+		} else if (strcmp(*argv, "tbl") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the class type "
+							"before the tbl.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_ROOT) {
+				fprintf(stderr, "tbl belongs to root classes only.\n");
+				return -1;
+			}
+
+			if (tbl_set) {
+				fprintf(stderr, "tbl already specified\n");
 				return -1;
 			}
 
 			NEXT_ARG();
-			if (get_u16(&opt.weight, *argv, 10)) {
-				fprintf(stderr, "Illegal weight argument\n");
+			if (get_u16(&opt.tbl, *argv, 10)) {
+				fprintf(stderr, "Illegal tbl argument\n");
 				return -1;
 			}
 
-			//TODO: is the weight mandatory?
-			//TODO: what weight values are accepted?
+			tbl_set = true;
+			//TODO: is the tbl mandatory?
+			//TODO: what tbl values are accepted?
 
 		} else {
 			fprintf(stderr, "Illegal argument\n");
@@ -549,74 +374,32 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 		}
 
 		argc--; argv++;
-
-		/*} else if (strcmp(*argv, "rate") == 0) {
-			if (ceetm_weight_mode) {
-				explain1(0);
-				return -1;
-			}
-			NEXT_ARG();
-			if (opt.rate) {
-				fprintf(stderr, "Double \"rate\" spec\n");
-				return -1;
-			}
-			if (get_rate(&opt.rate, *argv)) {
-				explain1(0);
-				return -1;
-			}
-		} else if (strcmp(*argv, "ceil") == 0) {
-			if (ceetm_weight_mode) {
-				explain1(0);
-				return -1;
-			}
-			NEXT_ARG();
-			if (opt.ceil) {
-				fprintf(stderr, "Double \"ceil\" spec\n");
-				return -1;
-			}
-			if (get_rate(&opt.ceil, *argv)) {
-				explain1(0);
-				return -1;
-			}
-		} else if (strcmp(*argv, "weight") == 0) {
-			if (opt.weight) {
-				fprintf(stderr, "Double \"weight\" spec\n");
-				return -1;
-			}
-			NEXT_ARG();
-			if (get_u32(&weight, *argv, 0)) {
-				explain1(0);
-				return -1;
-			}
-			if (weight < 0 && weight > 8) {
-				fprintf(stderr, "Value of \"weight\" is in between [0, 8].\n");
-				return -1;
-			}
-			opt.weight = weight * 1000;
-			ceetm_weight_mode = 1;
-		} else {
-			explain();
-			return -1;
-		}
-		argc--; argv++;*/
 	}
 
-	/*if (opt.weight) {
-		if (opt.rate || opt.ceil) {
-			explain1(0);
-			return -1;
-		}
-	} else {
-		if (!opt.rate) {
-			explain1(0);
-			return -1;
-		}
-	}*/
-
-	if (opt.ceil && !opt.rate) {
-		fprintf(stderr, "rate is mandatory for shaped classes\n");
+	if (!opt.type) {
+		fprintf(stderr, "please specify the class type\n");
 		return -1;
 	}
+
+	if (opt.type == CEETM_ROOT && !tbl_set && !rate_set) {
+		fprintf(stderr, "either tbl or rate are mandatory for root classes\n");
+		return -1;
+	}
+
+	if (opt.type == CEETM_ROOT && tbl_set && rate_set) {
+		fprintf(stderr, "both tbl and rate can not be used for root classes\n");
+		return -1;
+	}
+
+	if (opt.type == CEETM_ROOT && ceil_set && !rate_set) {
+		fprintf(stderr, "rate is mandatory for shaped root classes\n");
+		return -1;
+	}
+
+	if (rate_set)
+		opt.shaped = 1;
+	else
+		opt.shaped = 0;
 
 	tail = NLMSG_TAIL(n);
 	addattr_l(n, 1024, TCA_OPTIONS, NULL, 0);
@@ -631,6 +414,7 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	struct rtattr *tb[TCA_CEETM_MAX+1];
 	struct tc_ceetm_qopt *qopt = NULL;
 	struct tc_ceetm_copt *copt = NULL;
+	char buf[64];
 
 	if (opt == NULL)
 		return 0;
@@ -652,13 +436,10 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	}
 
 	if (qopt) {
-		char buf[64];
-		int i;
-
-		if (qopt->type == CEETM_Q_LNI) {
+		if (qopt->type == CEETM_ROOT) {
 			fprintf(f, "type root");
 
-			if (qopt->rate) {
+			if (qopt->shaped) {
 				print_rate(buf, sizeof(buf), qopt->rate);
 				fprintf(f, " shaped rate %s ", buf);
 
@@ -671,42 +452,18 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 				fprintf(f, " unshaped");
 			}
 
-		} else if (qopt->type == CEETM_Q_CHNL) {
-			fprintf(f, "type prio qcount %u ", qopt->qcount);
+		} else if (qopt->type == CEETM_PRIO) {
+			fprintf(f, "type prio %s qcount %u ",
+					qopt->shaped ? "shaped" : "unshaped",
+					qopt->qcount);
 		}
-
-		/*} else if (qopt->type == CEETM_Q_PRIO) {
-			fprintf(f, "type prio ");
-
-			fprintf(f, "cr_map ");
-			for (i = 0; i <= 7; i++)
-				fprintf(f, "%u ", qopt->cr_map[i]);
-
-			fprintf(f, "er_map ");
-			for (i = 0; i <= 7; i++)
-				fprintf(f, "%u ", qopt->er_map[i]);*/
-		/*} else if (qopt->type == CEETM_Q_WBFS) {
-			fprintf(f, "type wbfs ");
-
-			fprintf(f, "queues %u ", qopt->queues);
-
-			fprintf(f, "weight ");
-			for (i = 0; i < (__u32)qopt->queues; i++)
-				fprintf(f, "%u ", qopt->weight[i]);
-
-			fprintf(f, " cr_map ");
-			fprintf(f, "%u ", qopt->cr_map[0]);
-
-			fprintf(f, " er_map ");
-			fprintf(f, "%u ", qopt->er_map[0]);
-		}*/
 	}
 
 	if (copt) {
-		char buf[64];
+		if (copt->type == CEETM_ROOT) {
+			fprintf(f, "type root ");
 
-		if (copt->shaped) {
-			if (copt->rate) {
+			if (copt->shaped) {
 				print_rate(buf, sizeof(buf), copt->rate);
 				fprintf(f, "shaped rate %s ", buf);
 
@@ -714,11 +471,17 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 				fprintf(f, "ceil %s ", buf);
 
 			} else {
-				fprintf(f, "shaped CR %d ER %d", copt->cr, copt->er);
+				fprintf(f, "unshaped tbl %d", copt->tbl);
 			}
 
-		} else {
-			fprintf(f, "unshaped weight %d", copt->weight);
+		} else if (copt->type == CEETM_PRIO) {
+			fprintf(f, "type prio ");
+
+			if (copt->shaped) {
+				fprintf(f, "shaped CR %d ER %d", copt->cr, copt->er);
+			} else {
+				fprintf(f, "unshaped");
+			}
 		}
 	}
 
