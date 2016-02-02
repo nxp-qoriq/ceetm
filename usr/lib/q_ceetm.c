@@ -108,6 +108,8 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 	bool overhead_set = false;
 	bool rate_set = false;
 	bool ceil_set = false;
+	bool cr_set = false;
+	bool er_set = false;
 	struct rtattr *tail;
 	memset(&opt, 0, sizeof(opt));
 
@@ -126,6 +128,9 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 			else if (matches(*argv, "prio") == 0)
 				opt.type = CEETM_PRIO;
 
+			else if (matches(*argv, "wbfs") == 0)
+				opt.type = CEETM_WBFS;
+
 			else {
 				fprintf(stderr, "Illegal type argument\n");
 				return -1;
@@ -137,8 +142,8 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 						"type before the qcount.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_PRIO) {
-				fprintf(stderr, "qcount belongs to prio qdiscs only.\n");
+			} else if (opt.type == CEETM_ROOT) {
+				fprintf(stderr, "qcount belongs to prio and wbfs qdiscs only.\n");
 				return -1;
 			}
 
@@ -148,13 +153,23 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 			}
 
 			NEXT_ARG();
-			if (get_u16(&opt.qcount, *argv, 10)) {
+			if (get_u16(&opt.qcount, *argv, 10) || opt.qcount == 0) {
 				fprintf(stderr, "Illegal qcount argument\n");
 				return -1;
 			}
 
-			if (opt.qcount < 1 || opt.qcount > TC_CEETM_MAX_CQ_COUNT) {
-				fprintf(stderr, "qcount must be between 1 and 8\n");
+			if (opt.type == CEETM_PRIO && opt.qcount > CEETM_MAX_PRIO_QCOUNT) {
+				fprintf(stderr, "qcount must be between 1 and "
+					"%d for prio qdiscs\n", CEETM_MAX_PRIO_QCOUNT);
+				return -1;
+			}
+
+			if (opt.type == CEETM_WBFS &&
+					opt.qcount != CEETM_MIN_WBFS_QCOUNT &&
+					opt.qcount != CEETM_MAX_WBFS_QCOUNT) {
+				fprintf(stderr, "qcount must be either %d or "
+					"%d for wbfs qdiscs\n", CEETM_MIN_WBFS_QCOUNT,
+								CEETM_MAX_WBFS_QCOUNT);
 				return -1;
 			}
 
@@ -230,7 +245,56 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 
 			overhead_set = 1;
 
+		} else if (strcmp(*argv, "cr") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the qdisc type "
+							"before the cr.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_WBFS) {
+				fprintf(stderr, "cr belongs to wbfs qdiscs only.\n");
+				return -1;
+			}
+
+			if (cr_set) {
+				fprintf(stderr, "cr already specified\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (get_u16(&opt.cr, *argv, 10) || opt.cr > 1) {
+				fprintf(stderr, "Illegal cr argument\n");
+				return -1;
+			}
+
+			cr_set = 1;
+
+		} else if (strcmp(*argv, "er") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the qdisc type "
+							"before the er.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_WBFS) {
+				fprintf(stderr, "er belongs to wbfs qdiscs only.\n");
+				return -1;
+			}
+
+			if (er_set) {
+				fprintf(stderr, "er already specified\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (get_u16(&opt.er, *argv, 10) || opt.er > 1) {
+				fprintf(stderr, "Illegal er argument\n");
+				return -1;
+			}
+
+			er_set = 1;
+
 		} else {
+			// TODO: qweight argument
 			fprintf(stderr, "Illegal argument\n");
 		}
 
@@ -249,6 +313,11 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 
 	if (opt.type == CEETM_PRIO && !opt.qcount) {
 		fprintf(stderr, "qcount is mandatory for a prio qdisc\n");
+		return -1;
+	}
+
+	if (opt.type == CEETM_WBFS && !opt.qcount) {
+		fprintf(stderr, "qcount is mandatory for a wbfs qdisc\n");
 		return -1;
 	}
 
@@ -456,6 +525,17 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 			fprintf(f, "type prio %s qcount %u ",
 					qopt->shaped ? "shaped" : "unshaped",
 					qopt->qcount);
+
+		} else if (qopt->type == CEETM_WBFS) {
+			fprintf(f, "type wbfs ");
+
+			if (qopt->shaped) {
+				fprintf(f, "shaped cr %d er %d ", qopt->cr, qopt->er);
+			} else {
+				fprintf(f, "unshaped ");
+			}
+
+			fprintf(f, "qcount %u", qopt->qcount);
 		}
 	}
 

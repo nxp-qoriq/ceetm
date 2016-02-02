@@ -378,7 +378,9 @@ struct tc_htb_xstats {
 /* CEETM section */
 
 /* Maximum number of CEETM CQs that can be linked to a channel (prio qdisc) */
-#define TC_CEETM_MAX_CQ_COUNT	8
+#define CEETM_MAX_PRIO_QCOUNT	8
+#define CEETM_MAX_WBFS_QCOUNT	8
+#define CEETM_MIN_WBFS_QCOUNT	4
 
 enum {
 	TCA_CEETM_UNSPEC,
@@ -404,6 +406,8 @@ struct tc_ceetm_qopt {
 	__u16 overhead;
 	__u32 rate;
 	__u32 ceil;
+	__u16 cr;
+	__u16 er;
 };
 
 /* CEETM Class configuration parameters */
