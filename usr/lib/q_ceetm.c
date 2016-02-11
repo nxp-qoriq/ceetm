@@ -562,6 +562,9 @@ int ceetm_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 			} else {
 				fprintf(f, "unshaped");
 			}
+
+		} else if (copt->type == CEETM_WBFS) {
+			fprintf(f, "type wbfs weight %d", copt->weight);
 		}
 	}
 

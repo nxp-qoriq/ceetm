@@ -419,6 +419,7 @@ struct tc_ceetm_copt {
 	__u16 tbl;
 	__u16 cr;
 	__u16 er;
+	__u8 weight;
 };
 
 /* CEETM stats */
