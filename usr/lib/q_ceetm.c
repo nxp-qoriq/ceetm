@@ -110,7 +110,9 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 	bool ceil_set = false;
 	bool cr_set = false;
 	bool er_set = false;
+	bool qweight_set = false;
 	struct rtattr *tail;
+	int i;
 	memset(&opt, 0, sizeof(opt));
 
 	while (argc > 0) {
@@ -243,7 +245,7 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-			overhead_set = 1;
+			overhead_set = true;
 
 		} else if (strcmp(*argv, "cr") == 0) {
 			if (!opt.type) {
@@ -267,7 +269,7 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-			cr_set = 1;
+			cr_set = true;
 
 		} else if (strcmp(*argv, "er") == 0) {
 			if (!opt.type) {
@@ -291,11 +293,46 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-			er_set = 1;
+			er_set = true;
+
+		} else if (strcmp(*argv, "qweight") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the qdisc type "
+							"before the qweight.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_WBFS) {
+				fprintf(stderr, "qweight belongs to wbfs qdiscs only.\n");
+				return -1;
+			}
+
+			if (!opt.qcount) {
+				fprintf(stderr, "Please specify the qcount "
+							"before the qweight.\n");
+				return -1;
+			}
+
+			if (qweight_set) {
+				fprintf(stderr, "qweight already specified\n");
+				return -1;
+			}
+
+			for (i = 0; i < opt.qcount; i++) {
+				NEXT_ARG();
+				if (get_u8(&opt.qweight[i], *argv, 10) ||
+					opt.qweight[i] > CEETM_MAX_WBFS_VALUE) {
+					fprintf(stderr, "Illegal qweight "
+							"argument: must be "
+							"between 0 and 248\n");
+					return -1;
+				}
+			}
+
+			qweight_set = true;
 
 		} else {
-			// TODO: qweight argument
 			fprintf(stderr, "Illegal argument\n");
+			return -1;
 		}
 
 		argc--; argv++;
@@ -316,8 +353,8 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 		return -1;
 	}
 
-	if (opt.type == CEETM_WBFS && !opt.qcount) {
-		fprintf(stderr, "qcount is mandatory for a wbfs qdisc\n");
+	if (opt.type == CEETM_WBFS && (!opt.qcount || !qweight_set)) {
+		fprintf(stderr, "qcount and qweight are mandatory for a wbfs qdiscs\n");
 		return -1;
 	}
 

@@ -381,6 +381,7 @@ struct tc_htb_xstats {
 #define CEETM_MAX_PRIO_QCOUNT	8
 #define CEETM_MAX_WBFS_QCOUNT	8
 #define CEETM_MIN_WBFS_QCOUNT	4
+#define CEETM_MAX_WBFS_VALUE	248
 
 enum {
 	TCA_CEETM_UNSPEC,
@@ -408,6 +409,7 @@ struct tc_ceetm_qopt {
 	__u32 ceil;
 	__u16 cr;
 	__u16 er;
+	__u8 qweight[CEETM_MAX_WBFS_QCOUNT];
 };
 
 /* CEETM Class configuration parameters */
