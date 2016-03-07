@@ -364,6 +364,8 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 	bool tbl_set = false;
 	bool rate_set = false;
 	bool ceil_set = false;
+	bool cr_set = false;
+	bool er_set = false;
 
 	while (argc > 0) {
 		if (strcmp(*argv, "type") == 0) {
@@ -459,6 +461,56 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 
 			tbl_set = true;
 
+		} else if (strcmp(*argv, "cr") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the class type "
+						"before the cr.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_PRIO) {
+				fprintf(stderr, "cr belongs to prio classes "
+						"only.\n");
+				return -1;
+			}
+
+			if (cr_set) {
+				fprintf(stderr, "cr already specified.\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (get_u16(&opt.cr, *argv, 10) || opt.cr > 1) {
+				fprintf(stderr, "Illegal cr argument.\n");
+				return -1;
+			}
+
+			cr_set = true;
+
+		} else if (strcmp(*argv, "er") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the class type "
+						"before the er.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_PRIO) {
+				fprintf(stderr, "er belongs to prio classes "
+						"only.\n");
+				return -1;
+			}
+
+			if (er_set) {
+				fprintf(stderr, "er already specified.\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (get_u16(&opt.er, *argv, 10) || opt.er > 1) {
+				fprintf(stderr, "Illegal er argument.\n");
+				return -1;
+			}
+
+			er_set = true;
+
 		} else {
 			fprintf(stderr, "Illegal argument.\n");
 			return -1;
@@ -473,19 +525,31 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 	}
 
 	if (opt.type == CEETM_ROOT && !tbl_set && !rate_set) {
-		fprintf(stderr, "Either tbl or rate are mandatory for root "
-				"classes\n");
+		fprintf(stderr, "Either tbl or rate must be specified for "
+				"root classes.\n");
 		return -1;
 	}
 
 	if (opt.type == CEETM_ROOT && tbl_set && rate_set) {
 		fprintf(stderr, "Both tbl and rate can not be used for root "
-				"classes\n");
+				"classes.\n");
 		return -1;
 	}
 
 	if (opt.type == CEETM_ROOT && ceil_set && !rate_set) {
 		fprintf(stderr, "rate is mandatory for shaped root classes.\n");
+		return -1;
+	}
+
+	if (opt.type == CEETM_PRIO && !(cr_set && er_set)) {
+		fprintf(stderr, "Both cr and er are mandatory when altering a "
+				"prio class.\n");
+		return -1;
+	}
+
+	if (opt.type == CEETM_PRIO && !opt.cr && !opt.er) {
+		fprintf(stderr, "Either cr or er must be enabled for a shaped "
+				"prio class.\n");
 		return -1;
 	}
 
@@ -598,7 +662,7 @@ int ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 		fprintf(f, "type prio ");
 
 		if (copt->shaped) {
-			fprintf(f, "shaped CR %d ER %d", copt->cr, copt->er);
+			fprintf(f, "shaped cr %d er %d", copt->cr, copt->er);
 		} else {
 			fprintf(f, "unshaped");
 		}
