@@ -27,26 +27,26 @@
 #include "tc_util.h"
 
 
-static void explain(void)
+static void explain()
 {
 	fprintf(stderr, "Usage:\n"
-		"... qdisc add ... ceetm type root [rate R [ceil C] overhead O"
-		" mpu M]\n"
-		"... class add ... ceetm (weight CW | rate R [ceil C])\n"
-		"... qdisc add ... ceetm type prio [cr_map CR1 ... CR8] "
-		"[er_map ER1 ... ER8]\n"
-		"... qdisc add ... ceetm type wbfs queues Q W1 ... Wn [cr_map "
-		"CR1] [er_map ER1]\n"
+		"... qdisc add ... ceetm type root [rate R [ceil C] overhead O]\n"
+		"... class add ... ceetm type root (tbl T | rate R [ceil C])\n"
+		"... qdisc add ... ceetm type prio qcount Q\n"
+		"... class change ... ceetm type prio [cr CR] [er ER]\n"
+		"... qdisc add ... ceetm type wbfs qcount Q qweight W1 ... Wn "
+		"[cr CR] [er ER]\n"
 		"\n"
 		"Qdisc types:\n"
-		"root - link a CEETM LNI to a FMan port\n"
-		"prio - create an eigth-class Priority Scheduler\n"
-		"wbfs - create a four/eight-class Weighted Bandwidth Fair "
-		"Scheduler\n"
+		"root - configure a LNI linked to a FMan port\n"
+		"prio - configure a channel's Priority Scheduler with up to "
+		"eight classes\n"
+		"wbfs - configure a Weighted Bandwidth Fair Scheduler with "
+		"four or eight classes\n"
 		"\n"
 		"Class types:\n"
-		"weighted - create an unshaped channel\n"
-		"rated - create a shaped channel\n"
+		"root - configure a shaped or unshaped channel\n"
+		"prio - configure an independent class queue\n"
 		"\n"
 		"Options:\n"
 		"R - the CR of the LNI's or channel's dual-rate shaper "
@@ -54,24 +54,20 @@ static void explain(void)
 		"C - the ER of the LNI's or channel's dual-rate shaper "
 		"(optional for shaping scenarios, defaults to 0)\n"
 		"O - per-packet size overhead used in rate computations "
-		"(required for shaping scenarios, recommended value is 24 i.e."
-		" 12 bytes IFG + 8 bytes Preamble + 4 bytes FCS)\n"
-		"M - minimum packet size used in rate computations (required"
-		" for shaping scenarios)\n"
-		"CW - the weight of an unshaped channel measured in MB "
-		"(required for unshaped channels)\n"
-		"CRx - boolean marking if the class group or corresponding "
-		"class queue contributes to CR shaping (1) or not (0) "
-		"(optional, defaults to 1 for shaping scenarios)\n"
-		"ERx - boolean marking if the class group or corresponding "
-		"class queue contributes to ER shaping (1) or not (0) "
-		"(optional, defaults to 1 for shaping scenarios)\n"
-		"Q - the number of class queues in the class group "
-		"(either 4 or 8)\n"
+		"(required for shaping scenarios, recommended value is 24 "
+		"i.e. 12 bytes IFG + 8 bytes Preamble + 4 bytes FCS)\n"
+		"T - the token bucket limit of an unshaped channel used as "
+		"fair queuing weight (required for unshaped channels)\n"
+		"CR/ER - boolean marking if the class group or prio class "
+		"queue contributes to CR/ER shaping (1) or not (0) (optional, "
+		"at least one needs to be enabled for shaping scenarios, both "
+		"default to 1 for prio class queues)\n"
+		"Q - the number of class queues connected to the channel "
+		"(from 1 to 8) or in a class group (either 4 or 8)\n"
 		"Wx - the weights of each class in the class group measured "
 		"in a log scale with values from 1 to 248 (either four or "
 		"eight, depending on the size of the class group)\n"
-	);
+		);
 }
 
 static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
@@ -313,8 +309,13 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 
 			qweight_set = true;
 
+		} else if (strcmp(*argv, "help") == 0) {
+			explain();
+			return -1;
+
 		} else {
 			fprintf(stderr, "Illegal argument.\n");
+			explain();
 			return -1;
 		}
 
