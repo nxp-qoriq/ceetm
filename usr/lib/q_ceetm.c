@@ -686,8 +686,9 @@ static int ceetm_print_xstats(struct qdisc_util *qu, FILE *f, struct rtattr *xst
 		return -1;
 
 	st = RTA_DATA(xstats);
-	fprintf(f, "enqueue %llu drop %llu dequeue %llu dequeue_bytes %llu\n",
-			st->enqueue, st->drop, st->dequeue, st->deq_bytes);
+	fprintf(f, "ern drops %llu congested %llu frames %llu bytes %llu\n",
+			st->ern_drop_count, st->cgr_congested_count,
+			st->frame_count, st->byte_count);
 	return 0;
 }
 
