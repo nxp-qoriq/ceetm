@@ -10,14 +10,10 @@ CC := $(CROSS_COMPILE)gcc
 
 ARCH = powerpc
 
-ifeq ($(ARCH), x86_64)
-CFLAGS = -DX86_64 -D__LP64__
-else
 ifdef SYSROOT
   CFLAGS = --sysroot=$(SYSROOT)
 else
   CFLAGS =
-endif
 endif
 
 SHARED_LIBS ?= y
