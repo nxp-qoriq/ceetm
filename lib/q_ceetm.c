@@ -299,10 +299,11 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 			for (i = 0; i < opt.qcount; i++) {
 				NEXT_ARG();
 				if (get_u8(&opt.qweight[i], *argv, 10) ||
+					opt.qweight[i] == 0 ||
 					opt.qweight[i] > CEETM_MAX_WBFS_VALUE) {
 					fprintf(stderr, "Illegal qweight "
 							"argument: must be "
-							"between 0 and 248.\n");
+							"between 1 and 248.\n");
 					return -1;
 				}
 			}
@@ -381,6 +382,9 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 
 			} else if (matches(*argv, "prio") == 0) {
 				opt.type = CEETM_PRIO;
+
+			} else if (matches(*argv, "wbfs") == 0) {
+				opt.type = CEETM_WBFS;
 
 			} else {
 				fprintf(stderr, "Illegal type argument.\n");
@@ -512,6 +516,33 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 
 			er_set = true;
 
+		} else if (strcmp(*argv, "qweight") == 0) {
+			if (!opt.type) {
+				fprintf(stderr, "Please specify the class type "
+						"before the qweight.\n");
+				return -1;
+
+			} else if (opt.type != CEETM_WBFS) {
+				fprintf(stderr, "qweight belongs to wbfs "
+						"classes only.\n");
+				return -1;
+			}
+
+			if (opt.weight) {
+				fprintf(stderr, "qweight already specified.\n");
+				return -1;
+			}
+
+			NEXT_ARG();
+			if (get_u8(&opt.weight, *argv, 10) ||
+				opt.weight == 0 ||
+				opt.weight > CEETM_MAX_WBFS_VALUE) {
+				fprintf(stderr, "Illegal qweight "
+						"argument: must be "
+						"between 1 and 248.\n");
+				return -1;
+			}
+
 		} else {
 			fprintf(stderr, "Illegal argument.\n");
 			return -1;
@@ -551,6 +582,11 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 	if (opt.type == CEETM_PRIO && !opt.cr && !opt.er) {
 		fprintf(stderr, "Either cr or er must be enabled for a shaped "
 				"prio class.\n");
+		return -1;
+	}
+
+	if (opt.type == CEETM_WBFS && !opt.weight) {
+		fprintf(stderr, "qweight is mandatory for wbfs classes.\n");
 		return -1;
 	}
 
@@ -669,7 +705,7 @@ int ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 		}
 
 	} else if (copt->type == CEETM_WBFS) {
-		fprintf(f, "type wbfs weight %d", copt->weight);
+		fprintf(f, "type wbfs qweight %d", copt->weight);
 	}
 
 	return 0;
