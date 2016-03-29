@@ -30,12 +30,18 @@
 static void explain()
 {
 	fprintf(stderr, "Usage:\n"
-		"... qdisc add ... ceetm type root [rate R [ceil C] overhead O]\n"
+		"... qdisc add ... ceetm type root [rate R [ceil C] [overhead O]]\n"
 		"... class add ... ceetm type root (tbl T | rate R [ceil C])\n"
 		"... qdisc add ... ceetm type prio qcount Q\n"
-		"... class change ... ceetm type prio [cr CR] [er ER]\n"
 		"... qdisc add ... ceetm type wbfs qcount Q qweight W1 ... Wn "
 		"[cr CR] [er ER]\n"
+		"\n"
+		"Update configurations:\n"
+		"... qdisc change ... ceetm type root [rate R [ceil C] [overhead O]]\n"
+		"... class change ... ceetm type root (tbl T | rate R [ceil C])\n"
+		"... class change ... ceetm type prio [cr CR] [er ER]\n"
+		"... qdisc change ... ceetm type wbfs [cr CR] [er ER]\n"
+		"... class change ... ceetm type wbfs qweight W\n"
 		"\n"
 		"Qdisc types:\n"
 		"root - configure a LNI linked to a FMan port\n"
@@ -64,9 +70,10 @@ static void explain()
 		"default to 1 for prio class queues)\n"
 		"Q - the number of class queues connected to the channel "
 		"(from 1 to 8) or in a class group (either 4 or 8)\n"
-		"Wx - the weights of each class in the class group measured "
-		"in a log scale with values from 1 to 248 (either four or "
-		"eight, depending on the size of the class group)\n"
+		"W - the weights of each class in the class group measured "
+		"in a log scale with values from 1 to 248 (when adding a wbfs "
+		"qdisc, either four or eight, depending on the size of the "
+		"class group; when updating a wbfs class, only one)\n"
 		);
 }
 
@@ -335,12 +342,6 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 
 	if (opt.type == CEETM_PRIO && !opt.qcount) {
 		fprintf(stderr, "qcount is mandatory for a prio qdisc.\n");
-		return -1;
-	}
-
-	if (opt.type == CEETM_WBFS && (!opt.qcount || !qweight_set)) {
-		fprintf(stderr, "qcount and qweight are mandatory for a "
-				"wbfs qdiscs.\n");
 		return -1;
 	}
 
