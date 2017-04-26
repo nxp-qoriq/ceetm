@@ -1,29 +1,26 @@
-#/**************************************************************************
-# * Copyright 2013, Freescale Semiconductor, Inc. All rights reserved.
-# ***************************************************************************/
-#/*
-# * File:	Makefile
-# *
-# * Authors:	Sachin Saxena <sachin.saxena@freescale.com>
-# * History
-# *  Version     Date		Author			Change Description *
-# *  1.0	15-10-2013	Sachin Saxena		Initial Code
-# *  2.0	15-03-2016	Camelia Groza		Remove the kernel module
-# */
+CC := $(CROSS_COMPILE)gcc
 
-TOPDIR := $(shell pwd)
-export TOPDIR
-#------------------------------------------------------------------------------
-#  Include Definitions
-#------------------------------------------------------------------------------
-.PHONY: all
-.NOTPARALLEL:
-all:
-	make -w -C lib -f Makefile
-	mkdir -p bin
-	cp lib/q_ceetm.so bin/.
-#--------------------------------------------------------------
+CFLAGS := -Wall -Wstrict-prototypes -Wmissing-prototypes \
+	  -Wmissing-declarations -Wold-style-definition -Wformat=2
+LDFLAGS += -Wl,-export-dynamic
+
+# Point to the iproute2 headers that need to be included. Modify this path
+# if you are not using flex-builder. Download the iproute2 sources for the
+# desired version and point to those instead.
+CFLAGS += -Ipackages/upstream-packages/iproute2-4.3.0
+
+MODDESTDIR := $(DESTDIR)/usr/lib/tc
+
+all: q_ceetm.so
+
+q_ceetm.so: q_ceetm.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -fpic -o q_ceetm.so q_ceetm.c
+
+install:
+	install -d $(MODDESTDIR)
+	install -m 755 q_ceetm.so $(MODDESTDIR)
+
 .PHONY: clean
 clean:
-	make -w -C lib -f Makefile clean
-	rm -rf bin
+	rm -f *.o *.so
+
