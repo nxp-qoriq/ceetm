@@ -42,7 +42,7 @@
 
 #include "q_ceetm.h"
 
-static void explain()
+static void explain(void)
 {
 	fprintf(stderr, "Usage:\n"
 		"... qdisc add ... ceetm type root [rate R [ceil C] [overhead O]]\n"
@@ -619,7 +619,7 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 	return 0;
 }
 
-int ceetm_print_qopt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
+static int ceetm_print_qopt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 {
 	struct rtattr *tb[TCA_CEETM_MAX + 1];
 	struct tc_ceetm_qopt *qopt = NULL;
@@ -676,7 +676,7 @@ int ceetm_print_qopt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	return 0;
 }
 
-int ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
+static int ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 {
 	struct rtattr *tb[TCA_CEETM_MAX + 1];
 	struct tc_ceetm_copt *copt = NULL;
@@ -738,7 +738,7 @@ static int ceetm_print_xstats(struct qdisc_util *qu, FILE *f, struct rtattr *xst
 		return -1;
 
 	st = RTA_DATA(xstats);
-	fprintf(f, "ern drops %llu congested %llu frames %llu bytes %llu\n",
+	fprintf(f, "ern drops %u congested %u frames %llu bytes %llu\n",
 			st->ern_drop_count, st->cgr_congested_count,
 			st->frame_count, st->byte_count);
 	return 0;
