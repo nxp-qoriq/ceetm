@@ -7,7 +7,9 @@ LDFLAGS += -Wl,-export-dynamic
 # Point to the iproute2 headers that need to be included. Modify this path
 # if you are not using flex-builder. Download the iproute2 sources for the
 # desired version and point to those instead.
-CFLAGS += -I$(TOPDIR)/packages/upstream-packages/iproute2-4.3.0
+ifneq ($(IPROUTE2_DIR),)
+CFLAGS += -I$(IPROUTE2_DIR)
+endif
 
 MODDESTDIR := $(DESTDIR)/usr/lib/tc
 
