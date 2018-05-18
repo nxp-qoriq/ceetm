@@ -88,8 +88,8 @@ static void explain(void)
 		);
 }
 
-static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
-		struct nlmsghdr *n)
+static int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
+				  struct nlmsghdr *n)
 {
 	struct tc_ceetm_qopt opt;
 	bool overhead_set = false;
@@ -369,8 +369,8 @@ static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 	return 0;
 }
 
-static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
-		struct nlmsghdr *n)
+static int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
+				  struct nlmsghdr *n)
 {
 	struct tc_ceetm_copt opt;
 	struct rtattr *tail;
@@ -615,7 +615,8 @@ static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 	return 0;
 }
 
-static int ceetm_print_qopt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
+static int dpaa1_ceetm_print_qopt(struct qdisc_util *qu, FILE *f,
+				  struct rtattr *opt)
 {
 	struct rtattr *tb[TCA_CEETM_MAX + 1];
 	struct tc_ceetm_qopt *qopt = NULL;
@@ -672,7 +673,8 @@ static int ceetm_print_qopt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	return 0;
 }
 
-static int ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
+static int dpaa1_ceetm_print_copt(struct qdisc_util *qu, FILE *f,
+				  struct rtattr *opt)
 {
 	struct rtattr *tb[TCA_CEETM_MAX + 1];
 	struct tc_ceetm_copt *copt = NULL;
@@ -723,7 +725,8 @@ static int ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	return 0;
 }
 
-static int ceetm_print_xstats(struct qdisc_util *qu, FILE *f, struct rtattr *xstats)
+static int dpaa1_ceetm_print_xstats(struct qdisc_util *qu, FILE *f,
+				    struct rtattr *xstats)
 {
 	struct tc_ceetm_xstats *st;
 
@@ -742,9 +745,9 @@ static int ceetm_print_xstats(struct qdisc_util *qu, FILE *f, struct rtattr *xst
 
 struct qdisc_util ceetm_qdisc_util = {
 	.id	 	= "ceetm",
-	.parse_qopt	= ceetm_parse_qopt,
-	.print_qopt	= ceetm_print_qopt,
-	.parse_copt	= ceetm_parse_copt,
-	.print_copt	= ceetm_print_copt,
-	.print_xstats	= ceetm_print_xstats,
+	.parse_qopt	= dpaa1_ceetm_parse_qopt,
+	.print_qopt	= dpaa1_ceetm_print_qopt,
+	.parse_copt	= dpaa1_ceetm_parse_copt,
+	.print_copt	= dpaa1_ceetm_print_copt,
+	.print_xstats	= dpaa1_ceetm_print_xstats,
 };
