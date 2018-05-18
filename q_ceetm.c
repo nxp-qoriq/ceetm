@@ -39,11 +39,38 @@
 #include "dpaa1_ceetm.h"
 
 
+static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
+		struct nlmsghdr *n)
+{
+	return dpaa1_ceetm_parse_qopt(qu, argc, argv, n);
+}
+
+static int ceetm_print_qopt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
+{
+	return dpaa1_ceetm_print_qopt(qu, f, opt);
+}
+
+static int ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
+		struct nlmsghdr *n)
+{
+	return dpaa1_ceetm_parse_copt(qu, argc, argv, n);
+}
+
+static int ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
+{
+	return dpaa1_ceetm_print_copt(qu, f, opt);
+}
+
+static int ceetm_print_xstats(struct qdisc_util *qu, FILE *f, struct rtattr *xstats)
+{
+	return dpaa1_ceetm_print_xstats(qu, f, xstats);
+}
+
 struct qdisc_util ceetm_qdisc_util = {
 	.id	 	= "ceetm",
-	.parse_qopt	= dpaa1_ceetm_parse_qopt,
-	.print_qopt	= dpaa1_ceetm_print_qopt,
-	.parse_copt	= dpaa1_ceetm_parse_copt,
-	.print_copt	= dpaa1_ceetm_print_copt,
-	.print_xstats	= dpaa1_ceetm_print_xstats,
+	.parse_qopt	= ceetm_parse_qopt,
+	.print_qopt	= ceetm_print_qopt,
+	.parse_copt	= ceetm_parse_copt,
+	.print_copt	= ceetm_print_copt,
+	.print_xstats	= ceetm_print_xstats,
 };
