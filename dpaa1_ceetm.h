@@ -25,6 +25,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include "include/utils.h"
 #include "tc/tc_util.h"
 
@@ -82,4 +83,15 @@ struct tc_ceetm_xstats {
 	__u64 frame_count;
 	__u64 byte_count;
 };
+
+int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
+ 			  struct nlmsghdr *n);
+int dpaa1_ceetm_print_qopt(struct qdisc_util *qu, FILE *f,
+ 			  struct rtattr *opt);
+int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
+ 			  struct nlmsghdr *n);
+int dpaa1_ceetm_print_copt(struct qdisc_util *qu, FILE *f,
+ 			  struct rtattr *opt);
+int dpaa1_ceetm_print_xstats(struct qdisc_util *qu, FILE *f,
+				    struct rtattr *xstats);
 
