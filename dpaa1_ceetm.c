@@ -105,13 +105,13 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 			NEXT_ARG();
 
 			if (matches(*argv, "root") == 0)
-				opt.type = CEETM_ROOT;
+				opt.type = DPAA1_CEETM_ROOT;
 
 			else if (matches(*argv, "prio") == 0)
-				opt.type = CEETM_PRIO;
+				opt.type = DPAA1_CEETM_PRIO;
 
 			else if (matches(*argv, "wbfs") == 0)
-				opt.type = CEETM_WBFS;
+				opt.type = DPAA1_CEETM_WBFS;
 
 			else {
 				fprintf(stderr, "Illegal type argument.\n");
@@ -124,7 +124,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 						"type before the qcount.\n");
 				return -1;
 
-			} else if (opt.type == CEETM_ROOT) {
+			} else if (opt.type == DPAA1_CEETM_ROOT) {
 				fprintf(stderr, "qcount belongs to prio and "
 						"wbfs qdiscs only.\n");
 				return -1;
@@ -141,7 +141,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-			if (opt.type == CEETM_PRIO &&
+			if (opt.type == DPAA1_CEETM_PRIO &&
 					opt.qcount > CEETM_MAX_PRIO_QCOUNT) {
 				fprintf(stderr, "qcount must be between 1 and "
 					"%d for prio qdiscs\n",
@@ -149,7 +149,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 				return -1;
 			}
 
-			if (opt.type == CEETM_WBFS &&
+			if (opt.type == DPAA1_CEETM_WBFS &&
 					opt.qcount != CEETM_MIN_WBFS_QCOUNT &&
 					opt.qcount != CEETM_MAX_WBFS_QCOUNT) {
 				fprintf(stderr, "qcount must be either %d or "
@@ -165,7 +165,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 							"before the rate.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA1_CEETM_ROOT) {
 				fprintf(stderr, "rate belongs to root qdiscs "
 						"only.\n");
 				return -1;
@@ -190,7 +190,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 							"before the ceil.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA1_CEETM_ROOT) {
 				fprintf(stderr, "ceil belongs to root qdiscs "
 						"only.\n");
 				return -1;
@@ -215,7 +215,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 							"before the overhead.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA1_CEETM_ROOT) {
 				fprintf(stderr, "overhead belongs to root "
 						"qdiscs only.\n");
 				return -1;
@@ -240,7 +240,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 						"before the cr.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_WBFS) {
+			} else if (opt.type != DPAA1_CEETM_WBFS) {
 				fprintf(stderr, "cr belongs to wbfs qdiscs "
 						"only.\n");
 				return -1;
@@ -265,7 +265,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 						"before the er.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_WBFS) {
+			} else if (opt.type != DPAA1_CEETM_WBFS) {
 				fprintf(stderr, "er belongs to wbfs qdiscs "
 						"only.\n");
 				return -1;
@@ -290,7 +290,7 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 						"before the qweight.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_WBFS) {
+			} else if (opt.type != DPAA1_CEETM_WBFS) {
 				fprintf(stderr, "qweight belongs to wbfs "
 						"qdiscs only.\n");
 				return -1;
@@ -339,17 +339,17 @@ int dpaa1_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 		return -1;
 	}
 
-	if (opt.type == CEETM_ROOT && (ceil_set || overhead_set) && !rate_set) {
+	if (opt.type == DPAA1_CEETM_ROOT && (ceil_set || overhead_set) && !rate_set) {
 		fprintf(stderr, "rate is mandatory for a shaped root qdisc.\n");
 		return -1;
 	}
 
-	if (opt.type == CEETM_PRIO && !opt.qcount) {
+	if (opt.type == DPAA1_CEETM_PRIO && !opt.qcount) {
 		fprintf(stderr, "qcount is mandatory for a prio qdisc.\n");
 		return -1;
 	}
 
-	if (opt.type == CEETM_ROOT && rate_set)
+	if (opt.type == DPAA1_CEETM_ROOT && rate_set)
 		opt.shaped = 1;
 	else
 		opt.shaped = 0;
@@ -383,13 +383,13 @@ int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 
 			NEXT_ARG();
 			if (matches(*argv, "root") == 0) {
-				opt.type = CEETM_ROOT;
+				opt.type = DPAA1_CEETM_ROOT;
 
 			} else if (matches(*argv, "prio") == 0) {
-				opt.type = CEETM_PRIO;
+				opt.type = DPAA1_CEETM_PRIO;
 
 			} else if (matches(*argv, "wbfs") == 0) {
-				opt.type = CEETM_WBFS;
+				opt.type = DPAA1_CEETM_WBFS;
 
 			} else {
 				fprintf(stderr, "Illegal type argument.\n");
@@ -402,7 +402,7 @@ int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"type before the rate.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA1_CEETM_ROOT) {
 				fprintf(stderr, "rate belongs to root classes "
 						"only.\n");
 				return -1;
@@ -427,7 +427,7 @@ int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"before the ceil.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA1_CEETM_ROOT) {
 				fprintf(stderr, "ceil belongs to root classes "
 						"only.\n");
 				return -1;
@@ -452,7 +452,7 @@ int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"before the tbl.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA1_CEETM_ROOT) {
 				fprintf(stderr, "tbl belongs to root classes "
 						"only.\n");
 				return -1;
@@ -477,7 +477,7 @@ int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"before the cr.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_PRIO) {
+			} else if (opt.type != DPAA1_CEETM_PRIO) {
 				fprintf(stderr, "cr belongs to prio classes "
 						"only.\n");
 				return -1;
@@ -502,7 +502,7 @@ int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"before the er.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_PRIO) {
+			} else if (opt.type != DPAA1_CEETM_PRIO) {
 				fprintf(stderr, "er belongs to prio classes "
 						"only.\n");
 				return -1;
@@ -527,7 +527,7 @@ int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"before the qweight.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_WBFS) {
+			} else if (opt.type != DPAA1_CEETM_WBFS) {
 				fprintf(stderr, "qweight belongs to wbfs "
 						"classes only.\n");
 				return -1;
@@ -561,36 +561,36 @@ int dpaa1_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 		return -1;
 	}
 
-	if (opt.type == CEETM_ROOT && !tbl_set && !rate_set) {
+	if (opt.type == DPAA1_CEETM_ROOT && !tbl_set && !rate_set) {
 		fprintf(stderr, "Either tbl or rate must be specified for "
 				"root classes.\n");
 		return -1;
 	}
 
-	if (opt.type == CEETM_ROOT && tbl_set && rate_set) {
+	if (opt.type == DPAA1_CEETM_ROOT && tbl_set && rate_set) {
 		fprintf(stderr, "Both tbl and rate can not be used for root "
 				"classes.\n");
 		return -1;
 	}
 
-	if (opt.type == CEETM_ROOT && ceil_set && !rate_set) {
+	if (opt.type == DPAA1_CEETM_ROOT && ceil_set && !rate_set) {
 		fprintf(stderr, "rate is mandatory for shaped root classes.\n");
 		return -1;
 	}
 
-	if (opt.type == CEETM_PRIO && !(cr_set && er_set)) {
+	if (opt.type == DPAA1_CEETM_PRIO && !(cr_set && er_set)) {
 		fprintf(stderr, "Both cr and er are mandatory when altering a "
 				"prio class.\n");
 		return -1;
 	}
 
-	if (opt.type == CEETM_PRIO && !opt.cr && !opt.er) {
+	if (opt.type == DPAA1_CEETM_PRIO && !opt.cr && !opt.er) {
 		fprintf(stderr, "Either cr or er must be enabled for a shaped "
 				"prio class.\n");
 		return -1;
 	}
 
-	if (opt.type == CEETM_WBFS && !opt.weight) {
+	if (opt.type == DPAA1_CEETM_WBFS && !opt.weight) {
 		fprintf(stderr, "qweight is mandatory for wbfs classes.\n");
 		return -1;
 	}
@@ -630,7 +630,7 @@ int dpaa1_ceetm_print_qopt(struct qdisc_util *qu, FILE *f,
 	if (!qopt)
 		return 0;
 
-	if (qopt->type == CEETM_ROOT) {
+	if (qopt->type == DPAA1_CEETM_ROOT) {
 		fprintf(f, "type root");
 
 		if (qopt->shaped) {
@@ -646,12 +646,12 @@ int dpaa1_ceetm_print_qopt(struct qdisc_util *qu, FILE *f,
 			fprintf(f, " unshaped");
 		}
 
-	} else if (qopt->type == CEETM_PRIO) {
+	} else if (qopt->type == DPAA1_CEETM_PRIO) {
 		fprintf(f, "type prio %s qcount %u ",
 				qopt->shaped ? "shaped" : "unshaped",
 				qopt->qcount);
 
-	} else if (qopt->type == CEETM_WBFS) {
+	} else if (qopt->type == DPAA1_CEETM_WBFS) {
 		fprintf(f, "type wbfs ");
 
 		if (qopt->shaped) {
@@ -688,7 +688,7 @@ int dpaa1_ceetm_print_copt(struct qdisc_util *qu, FILE *f,
 	if (!copt)
 		return 0;
 
-	if (copt->type == CEETM_ROOT) {
+	if (copt->type == DPAA1_CEETM_ROOT) {
 		fprintf(f, "type root ");
 
 		if (copt->shaped) {
@@ -702,7 +702,7 @@ int dpaa1_ceetm_print_copt(struct qdisc_util *qu, FILE *f,
 			fprintf(f, "unshaped tbl %d", copt->tbl);
 		}
 
-	} else if (copt->type == CEETM_PRIO) {
+	} else if (copt->type == DPAA1_CEETM_PRIO) {
 		fprintf(f, "type prio ");
 
 		if (copt->shaped) {
@@ -711,7 +711,7 @@ int dpaa1_ceetm_print_copt(struct qdisc_util *qu, FILE *f,
 			fprintf(f, "unshaped");
 		}
 
-	} else if (copt->type == CEETM_WBFS) {
+	} else if (copt->type == DPAA1_CEETM_WBFS) {
 		fprintf(f, "type wbfs qweight %d", copt->weight);
 	}
 

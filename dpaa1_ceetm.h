@@ -46,9 +46,9 @@ enum {
 
 /* CEETM configuration types */
 enum {
-	CEETM_ROOT = 1,
-	CEETM_PRIO,
-	CEETM_WBFS
+	DPAA1_CEETM_ROOT = 1,
+	DPAA1_CEETM_PRIO,
+	DPAA1_CEETM_WBFS
 };
 
 /* CEETM Qdisc configuration parameters */
