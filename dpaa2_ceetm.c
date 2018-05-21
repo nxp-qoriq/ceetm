@@ -102,10 +102,10 @@ int dpaa2_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 			NEXT_ARG();
 
 			if (matches(*argv, "root") == 0)
-				opt.type = CEETM_ROOT;
+				opt.type = DPAA2_CEETM_ROOT;
 
 			else if (matches(*argv, "prio") == 0)
-				opt.type = CEETM_PRIO;
+				opt.type = DPAA2_CEETM_PRIO;
 
 			else {
 				fprintf(stderr, "Illegal type argument.\n");
@@ -118,7 +118,7 @@ int dpaa2_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 						"before prioA.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_PRIO) {
+			} else if (opt.type != DPAA2_CEETM_PRIO) {
 				fprintf(stderr, "prioA belongs to prio "
 						"qdiscs only.\n");
 				return -1;
@@ -142,7 +142,7 @@ int dpaa2_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 						"before prioB.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_PRIO) {
+			} else if (opt.type != DPAA2_CEETM_PRIO) {
 				fprintf(stderr, "prioB belongs to prio "
 						"qdiscs only.\n");
 				return -1;
@@ -166,7 +166,7 @@ int dpaa2_ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,
 							"before separate.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_PRIO) {
+			} else if (opt.type != DPAA2_CEETM_PRIO) {
 				fprintf(stderr, "separate belongs to prio qdiscs "
 						"only.\n");
 				return -1;
@@ -234,10 +234,10 @@ int dpaa2_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 
 			NEXT_ARG();
 			if (matches(*argv, "root") == 0) {
-				opt.type = CEETM_ROOT;
+				opt.type = DPAA2_CEETM_ROOT;
 
 			} else if (matches(*argv, "prio") == 0) {
-				opt.type = CEETM_PRIO;
+				opt.type = DPAA2_CEETM_PRIO;
 
 			} else {
 				fprintf(stderr, "Illegal type argument.\n");
@@ -250,7 +250,7 @@ int dpaa2_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"type before the CIR.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA2_CEETM_ROOT) {
 				fprintf(stderr, "CIR belongs to root classes "
 						"only.\n");
 				return -1;
@@ -274,7 +274,7 @@ int dpaa2_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 							"before the EIR.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA2_CEETM_ROOT) {
 				fprintf(stderr, "EIR belongs to root qdiscs "
 						"only.\n");
 				return -1;
@@ -298,7 +298,7 @@ int dpaa2_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 							"before the CBS.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA2_CEETM_ROOT) {
 				fprintf(stderr, "CBS belongs to root qdiscs "
 						"only.\n");
 				return -1;
@@ -323,7 +323,7 @@ int dpaa2_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 							"before the EBS.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA2_CEETM_ROOT) {
 				fprintf(stderr, "EBS belongs to root qdiscs "
 						"only.\n");
 				return -1;
@@ -348,7 +348,7 @@ int dpaa2_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 							"before the coupling.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_ROOT) {
+			} else if (opt.type != DPAA2_CEETM_ROOT) {
 				fprintf(stderr, "coupled belongs to root qdiscs "
 						"only.\n");
 				return -1;
@@ -373,7 +373,7 @@ int dpaa2_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"before the mode.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_PRIO) {
+			} else if (opt.type != DPAA2_CEETM_PRIO) {
 				fprintf(stderr, "mode belongs to prio "
 						"classes only.\n");
 				return -1;
@@ -408,7 +408,7 @@ int dpaa2_ceetm_parse_copt(struct qdisc_util *qu, int argc, char **argv,
 						"before the weight.\n");
 				return -1;
 
-			} else if (opt.type != CEETM_PRIO) {
+			} else if (opt.type != DPAA2_CEETM_PRIO) {
 				fprintf(stderr, "weight belongs to prio "
 						"classes only.\n");
 				return -1;
@@ -482,9 +482,9 @@ int dpaa2_ceetm_print_qopt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	if (!qopt)
 		return 0;
 
-	if (qopt->type == CEETM_ROOT) {
+	if (qopt->type == DPAA2_CEETM_ROOT) {
 		fprintf(f, "type root ");
-	} else if (qopt->type == CEETM_PRIO) {
+	} else if (qopt->type == DPAA2_CEETM_PRIO) {
 		fprintf(f, "type prio %s prioA %d prioB %d separate %d",
 				qopt->shaped ? "shaped " : "unshaped ",
 				qopt->prio_group_A, qopt->prio_group_B,
@@ -515,7 +515,7 @@ int dpaa2_ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	if (!copt)
 		return 0;
 
-	if (copt->type == CEETM_ROOT) {
+	if (copt->type == DPAA2_CEETM_ROOT) {
 		fprintf(f, "type root ");
 
 		if (copt->shaped) {
@@ -532,7 +532,7 @@ int dpaa2_ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 			fprintf(f, "unshaped ");
 		}
 
-	} else if (copt->type == CEETM_PRIO) {
+	} else if (copt->type == DPAA2_CEETM_PRIO) {
 		fprintf(f, "type prio ");
 
 		if (copt->shaped) {

@@ -47,8 +47,8 @@ enum {
 
 /* CEETM configuration types */
 enum dpaa2_ceetm_type {
-	CEETM_ROOT = 1,
-	CEETM_PRIO,
+	DPAA2_CEETM_ROOT = 1,
+	DPAA2_CEETM_PRIO,
 };
 
 enum {
