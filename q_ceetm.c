@@ -37,6 +37,7 @@
 #include <stdbool.h>
 
 #include "dpaa1_ceetm.h"
+#include "dpaa2_ceetm.h"
 
 
 static int ceetm_parse_qopt(struct qdisc_util *qu, int argc, char **argv,

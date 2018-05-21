@@ -15,8 +15,8 @@ MODDESTDIR := $(DESTDIR)/usr/lib/tc
 
 all: q_ceetm.so
 
-q_ceetm.so: dpaa1_ceetm.c q_ceetm.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -shared -fpic -o q_ceetm.so dpaa1_ceetm.c q_ceetm.c
+q_ceetm.so: dpaa1_ceetm.c dpaa2_ceetm.c q_ceetm.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -fpic -o q_ceetm.so dpaa1_ceetm.c dpaa2_ceetm.c q_ceetm.c
 
 install:
 	install -d $(MODDESTDIR)
