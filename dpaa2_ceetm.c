@@ -483,8 +483,7 @@ int dpaa2_ceetm_print_qopt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	if (qopt->type == DPAA2_CEETM_ROOT) {
 		fprintf(f, "type root ");
 	} else if (qopt->type == DPAA2_CEETM_PRIO) {
-		fprintf(f, "type prio %s prioA %d prioB %d separate %d",
-				qopt->shaped ? "shaped " : "unshaped ",
+		fprintf(f, "type prio prioA %d prioB %d separate %d",
 				qopt->prio_group_A, qopt->prio_group_B,
 				qopt->separate_groups);
 	}
@@ -532,12 +531,6 @@ int dpaa2_ceetm_print_copt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 
 	} else if (copt->type == DPAA2_CEETM_PRIO) {
 		fprintf(f, "type prio ");
-
-		if (copt->shaped) {
-			fprintf(f, "shaped cir %llu cbs %d ", copt->shaping_cfg.cir, copt->shaping_cfg.cbs);
-		} else {
-			fprintf(f, "unshaped ");
-		}
 
 		switch(copt->mode) {
 		case STRICT_PRIORITY:
