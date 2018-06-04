@@ -8,7 +8,7 @@ LDFLAGS += -Wl,-export-dynamic
 # if you are not using flex-builder. Download the iproute2 sources for the
 # desired version and point to those instead.
 ifneq ($(IPROUTE2_DIR),)
-CFLAGS += -I$(IPROUTE2_DIR)
+CFLAGS += -I$(IPROUTE2_DIR) -I$(IPROUTE2_DIR)/include
 endif
 
 MODDESTDIR := $(DESTDIR)/usr/lib/tc
